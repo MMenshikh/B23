@@ -1,0 +1,178 @@
+// Maksim Menshikh
+
+import java.util.Scanner;
+
+import static java.lang.Math.*;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        Map<Integer, String> map = new HashMap<>(100000);
+
+        int N = scanner.nextInt();
+        scanner.nextLine();
+
+        int[] scores = new int[N];
+
+        for (int i = 0; i < N; i++) {
+            String[] line = scanner.nextLine().split(" ");
+
+            int score = Integer.parseInt(line[0]);
+            scores[i] = score;
+            String fullName = line[1] + " " + line[2];
+
+            map.put(score, fullName);
+        }
+
+        System.out.println(map.get(findMedian(scores)));
+    }
+
+    public static int findMedian(int[] list) {
+        int n = list.length;
+        if (n % 2 == 1) {
+            return select(list, 0, n - 1, n / 2);
+        } else {
+            return (select(list, 0, n - 1, n / 2 - 1) + select(list, 0, n - 1, n / 2)) / 2;
+        }
+    }
+
+    public static int select(int[] list, int left, int right, int k) {
+        if (left == right) {
+            return list[left];
+        }
+        int pivotIndex = right;
+        pivotIndex = partition(list, left, right, pivotIndex);
+        if (k == pivotIndex) {
+            return list[k];
+        } else if (k < pivotIndex) {
+            return select(list, left, pivotIndex - 1, k);
+        } else {
+            return select(list, pivotIndex + 1, right, k);
+        }
+    }
+
+    public static int partition(int[] list, int left, int right, int pivotIndex) {
+        int pivotValue = list[pivotIndex];
+        swap(list, pivotIndex, right);
+        int storeIndex = left;
+        for (int i = left; i < right; i++) {
+            if (list[i] < pivotValue) {
+                swap(list, storeIndex, i);
+                storeIndex++;
+            }
+        }
+        swap(list, right, storeIndex);
+        return storeIndex;
+    }
+
+    public static void swap(int[] list, int i, int j) {
+        int temp = list[i];
+        list[i] = list[j];
+        list[j] = temp;
+    }
+
+}
+
+interface Map<K, V> {
+    void put(K key, V value);
+
+    V get(K key);
+
+    void remove(K key);
+
+    boolean containsKey(K key);
+}
+
+class HashMap<K, V> implements Map<K, V> {
+    private static class Node<K, V> {
+        final K key;
+        V value;
+        Node<K, V> next;
+
+        Node(K key, V value) {
+            this.key = key;
+            this.value = value;
+        }
+    }
+
+    private final int capacity;
+    private Node<K, V>[] table;
+
+    public HashMap(int capacity) {
+        this.capacity = capacity;
+        table = new Node[capacity];
+    }
+
+    private int hash(K key) {
+        return abs(key.hashCode()) % capacity;
+    }
+
+
+    @Override
+    public void put(K key, V value) {
+        int index = hash(key);
+        Node<K, V> newNode = new Node<>(key, value);
+
+        if (table[index] == null) {
+            table[index] = newNode;
+        } else {
+            Node<K, V> current = table[index];
+            while (current.next != null) {
+                if (current.key.equals(key)) {
+                    current.value = value;
+                    return;
+                }
+                current = current.next;
+            }
+            current.next = newNode;
+        }
+    }
+
+    @Override
+    public V get(K key) {
+        int index = hash(key);
+        Node<K, V> current = table[index];
+
+        while (current != null) {
+            if (current.key.equals(key)) {
+                return current.value;
+            }
+            current = current.next;
+        }
+        return null;
+    }
+
+    @Override
+    public void remove(K key) {
+        int index = hash(key);
+        Node<K, V> current = table[index];
+        Node<K, V> prev = null;
+
+        while (current != null) {
+            if (current.key.equals(key)) {
+                if (prev == null) {
+                    table[index] = current.next;
+                } else {
+                    prev.next = current.next;
+                }
+                return;
+            }
+            prev = current;
+            current = current.next;
+        }
+    }
+
+    @Override
+    public boolean containsKey(K key) {
+        int index = hash(key);
+        Node<K, V> current = table[index];
+
+        while (current != null) {
+            if (current.key.equals(key)) {
+                return true;
+            }
+            current = current.next;
+        }
+        return false;
+    }
+}
