@@ -1,0 +1,360 @@
+// C++ language
+
+// Maksim Menshikh
+
+#include <iostream>
+#include <algorithm>
+#include <vector>
+
+using namespace std;
+
+struct Point
+{
+    int x, y;
+};
+
+struct Segment
+{
+    Point start, end;
+};
+
+bool cmp(Point a, Point b)
+{
+    return a.x < b.x || (a.x == b.x && a.y < b.y);
+}
+
+int orientation(Point p, Point q, Point r)
+{
+    int val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+    if (val == 0) return 0;
+    return (val > 0) ? 1 : 2;
+}
+
+bool onSegment(Point p, Point q, Point r)
+{
+    if (q.x <= max(p.x, r.x) && q.x >= min(p.x, r.x) && q.y <= max(p.y, r.y) && q.y >= min(p.y, r.y))
+        return true;
+    return false;
+}
+
+bool doIntersect(Segment s1, Segment s2)
+{
+    Point p1 = s1.start, q1 = s1.end, p2 = s2.start, q2 = s2.end;
+
+    int o1 = orientation(p1, q1, p2);
+    int o2 = orientation(p1, q1, q2);
+    int o3 = orientation(p2, q2, p1);
+    int o4 = orientation(p2, q2, q1);
+
+    if (o1 != o2 && o3 != o4)
+        return true;
+
+    if (o1 == 0 && onSegment(p1, p2, q1)) return true;
+    if (o2 == 0 && onSegment(p1, q2, q1)) return true;
+    if (o3 == 0 && onSegment(p2, p1, q2)) return true;
+    if (o4 == 0 && onSegment(p2, q1, q2)) return true;
+
+    return false;
+}
+
+struct AVL
+{
+    int data;
+    struct AVL *left;
+    struct AVL *right;
+} *r;
+
+class AVLTree
+{
+public:
+    AVLTree()
+    {
+        r = nullptr;
+    }
+
+    int getHeight(AVL *t)
+    {
+        int h = 0;
+        if (t != nullptr) {
+            int lHeight = getHeight(t->left);
+            int rHeight = getHeight(t->right);
+            int maxHeight = max(lHeight, rHeight);
+            h = maxHeight + 1;
+        }
+        return h;
+    }
+    int difference(AVL *t)
+    {
+        int lHeight = getHeight(t->left);
+        int rHeight = getHeight(t->right);
+        int b = lHeight - rHeight;
+        return b;
+    }
+    static AVL *rrRotation(AVL *parent)
+    {
+        AVL *t;
+        t = parent->right;
+        parent->right = t->left;
+        t->left = parent;
+        return t;
+    }
+    static AVL *llRotation(AVL *parent)
+    {
+        AVL *t;
+        t = parent->left;
+        parent->left = t->right;
+        t->right = parent;
+        return t;
+    }
+    static AVL *lrRotation(AVL *parent)
+    {
+        AVL *t;
+        t = parent->left;
+        parent->left = rrRotation(t);
+        return llRotation(parent);
+    }
+    static AVL *rlRotation(AVL *parent)
+    {
+        AVL *t;
+        t = parent->right;
+        parent->right = llRotation(t);
+        return rrRotation(parent);
+    }
+    AVL *balance(AVL *t)
+    {
+        int b = difference(t);
+        if (b > 1) {
+            if (difference(t->left) > 0)
+                t = llRotation(t);
+            else
+                t = lrRotation(t);
+        }
+        else if (b < -1) {
+            if (difference(t->right) > 0)
+                t = rlRotation(t);
+            else
+                t = rrRotation(t);
+        }
+        return t;
+    }
+    AVL *insert(AVL *r, int value)
+    {
+        if (r == nullptr) {
+            r = new AVL;
+            r->data = value;
+            r->left = nullptr;
+            r->right = nullptr;
+            return r;
+        }
+        else if (value < r->data) {
+            r->left = insert(r->left, value);
+            r = balance(r);
+        }
+        else if (value >= r->data) {
+            r->right = insert(r->right, value);
+            r = balance(r);
+        }
+        return r;
+    }
+
+    AVL *minValueNode(AVL *node)
+    {
+        AVL *current = node;
+
+        while (current->left != nullptr) {
+            current = current->left;
+        }
+
+        return current;
+    }
+
+    AVL *deleteNode(AVL *root, int key)
+    {
+        if (root == nullptr) {
+            return root;
+        }
+
+        if (key < root->data) {
+            root->left = deleteNode(root->left, key);
+        }
+        else if (key > root->data) {
+            root->right = deleteNode(root->right, key);
+        }
+        else {
+            if (root->left == nullptr || root->right == nullptr) {
+                AVL *temp = root->left ? root->left : root->right;
+
+                if (temp == nullptr) {
+                    temp = root;
+                    root = nullptr;
+                }
+                else {
+                    *root = *temp;
+                }
+
+                delete temp;
+            }
+            else {
+                AVL *temp = minValueNode(root->right);
+
+                root->data = temp->data;
+
+                root->right = deleteNode(root->right, temp->data);
+            }
+        }
+
+        if (root == nullptr) {
+            return root;
+        }
+
+        balance(root);
+
+        int b = difference(root);
+
+        if (b > 1 && difference(root->left) >= 0) {
+            return rrRotation(root);
+        }
+
+        if (b > 1 && difference(root->left) < 0) {
+            root->left = rlRotation(root->left);
+            return rrRotation(root);
+        }
+
+        if (b < -1 && difference(root->right) <= 0) {
+            return rlRotation(root);
+        }
+
+        if (b < -1 && difference(root->right) > 0) {
+            root->right = rrRotation(root->right);
+            return rlRotation(root);
+        }
+
+        return root;
+    }
+
+    void returnTree(AVL *t, vector<Segment> segments)
+    {
+        vector<int> coords;
+
+        if (t == nullptr)
+            return;
+
+        returnTree(t->left, segments);
+
+        coords.push_back(t->data);
+
+        returnTree(t->right, segments);
+
+        for (int i = 0; i < coords.size(); i++) {
+            if (segments[i].start.x == coords[i]) segments[i].start.x = coords[i]; else deleteNode(r, t->data);
+        }
+    }
+};
+
+void AVLSort(vector<Segment> segments, int N)
+{
+    AVLTree tree;
+
+    for (int i = 0; i < N; i++) {
+        r = tree.insert(r, segments[i].start.x);
+        tree.balance(r);
+        tree.returnTree(r, segments);
+    }
+
+}
+
+void merge(vector<Segment> &segments, int left, int mid, int right)
+{
+    int n1 = mid - left + 1;
+    int n2 = right - mid;
+
+    vector<Segment> L(n1), R(n2);
+
+    for (int i = 0; i < n1; i++)
+        L[i] = segments[left + i];
+    for (int j = 0; j < n2; j++)
+        R[j] = segments[mid + 1 + j];
+
+    int i = 0, j = 0, k = left;
+
+    while (i < n1 && j < n2) {
+        if (cmp(L[i].start, R[j].start)) {
+            segments[k] = L[i];
+            i++;
+        }
+        else {
+            segments[k] = R[j];
+            j++;
+        }
+        k++;
+    }
+
+    while (i < n1) {
+        segments[k] = L[i];
+        i++;
+        k++;
+    }
+
+    while (j < n2) {
+        segments[k] = R[j];
+        j++;
+        k++;
+    }
+}
+
+void mergeSort(vector<Segment> &segments, int left, int right)
+{
+    if (left < right) {
+        int mid = left + (right - left) / 2;
+
+        mergeSort(segments, left, mid);
+        mergeSort(segments, mid + 1, right);
+
+        merge(segments, left, mid, right);
+    }
+}
+
+int main()
+{
+    int N;
+    cin >> N;
+
+    vector<Segment> segments;
+    for (int i = 0; i < N; i++) {
+        Segment seg;
+        cin >> seg.start.x >> seg.start.y >> seg.end.x >> seg.end.y;
+        segments.push_back(seg);
+    }
+
+    AVLSort(segments, 0);
+    mergeSort(segments, 0, segments.size() - 1);
+
+    bool found_intersection = false;
+    Segment intersecting_seg1, intersecting_seg2;
+
+    for (Segment seg: segments) {
+        for (Segment active_seg: segments) {
+            if (doIntersect(seg, active_seg) && seg.start.x != active_seg.start.x
+                && seg.start.y != active_seg.start.y) {
+                found_intersection = true;
+                intersecting_seg1 = seg;
+                intersecting_seg2 = active_seg;
+                break;
+            }
+        }
+        if (found_intersection) break;
+    }
+
+    if (found_intersection) {
+        cout << "INTERSECTION" << endl;
+        cout << intersecting_seg1.start.x << " " << intersecting_seg1.start.y << " " << intersecting_seg1.end.x << " "
+             << intersecting_seg1.end.y << endl;
+        cout << intersecting_seg2.start.x << " " << intersecting_seg2.start.y << " " << intersecting_seg2.end.x << " "
+             << intersecting_seg2.end.y << endl;
+    }
+    else {
+        cout << "NO INTERSECTIONS" << endl;
+    }
+
+    return 0;
+}
