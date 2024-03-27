@@ -1,0 +1,137 @@
+// Java language
+
+// Maksim Menshikh
+
+import java.util.Scanner;
+
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        String infixExpression = scanner.nextLine();
+        String rpnExpression = infixToRPN(infixExpression);
+        
+        StringBuilder output = new StringBuilder();
+        
+        for (String token : rpnExpression.split(" ")) {
+            if (!token.equals(",")) {
+                output.append(token).append(" ");
+            }
+        }
+
+        System.out.println(output);
+    }
+
+    static boolean isOperator(String token) {
+        return token.equals("+") || token.equals("-") || token.equals("*") || token.equals("/");
+    }
+
+    private static boolean isFunction(String token) {
+        return token.equals("min") || token.equals("max");
+    }
+
+    static int precedence(String operator) {
+        if (operator.equals("+") || operator.equals("-") || operator.equals(",")) {
+            return 1;
+        } else if (operator.equals("*") || operator.equals("/")) {
+            return 2;
+        }
+        return 3;
+    }
+
+    public static String infixToRPN(String infix) {
+        StringBuilder rpn = new StringBuilder();
+        ArrayStack<Character> stack = new ArrayStack<>();
+
+        String[] tokens = infix.split("\\s+");
+
+        for (String token : tokens) {
+            if (Character.isDigit(token.charAt(0))) {
+                rpn.append(token).append(" ");
+            } else if (isFunction(token) || isOperator(token) || token.equals(",")) {
+                while (!stack.isEmpty() && (isOperator(stack.peek()) || isFunction(stack.peek())) && (precedence(stack.peek()) >= precedence(token))) {
+                    rpn.append(stack.pop()).append(" ");
+                }
+                stack.push(token);
+            } else if (token.equals("(")) {
+                stack.push(token);
+            } else if (token.equals(")")) {
+                while (!stack.peek().equals("(")) {
+                    rpn.append(stack.pop()).append(" ");
+                }
+                stack.pop();
+            }
+        }
+        while (!stack.isEmpty()) {
+            rpn.append(stack.pop()).append(" ");
+        }
+        return rpn.toString().trim();
+    }
+}
+
+
+interface Stack<String> {
+    void push(String item);
+
+    String pop();
+
+    String peek();
+
+    boolean isEmpty();
+
+    int size();
+}
+
+class ArrayStack<T> implements Stack<String> {
+    private Node<T> top;
+    private int size;
+
+    private static class Node<T> {
+        private String data;
+        private Node<T> next;
+
+        public Node(String data) {
+            this.data = data;
+            this.next = null;
+        }
+    }
+
+    @Override
+    public void push(String item) {
+        Node<T> newNode = new Node<>(item);
+        newNode.next = top;
+        top = newNode;
+        size++;
+    }
+
+    @Override
+    public String pop() {
+        if (isEmpty()) {
+            throw new IllegalStateException("Stack is empty");
+        }
+        String data = top.data;
+        top = top.next;
+        size--;
+        return data;
+    }
+
+    @Override
+    public String peek() {
+        if (isEmpty()) {
+            throw new IllegalStateException("Stack is empty");
+        }
+        return top.data;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return top == null;
+    }
+
+
+    @Override
+    public int size() {
+        return size;
+    }
+}
