@@ -1,0 +1,176 @@
+// Java language
+
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        // initialisation and input variables
+        Scanner scanner = new Scanner(System.in);
+
+        int N = scanner.nextInt();
+
+        ArrayList<String> alphabet = new ArrayList<>(N);
+        for (int i = 0; i < N; i++)
+            alphabet.add(scanner.next());
+        Collections.sort(alphabet);
+
+        int M = scanner.nextInt();
+        int K = scanner.nextInt();
+        int L = scanner.nextInt();
+
+        // use functions to generate every language and output them
+        System.out.println(generateFirstLanguage(alphabet, M));
+        System.out.println(generateSecondLanguage(alphabet, K));
+        System.out.println(generateThirdLanguage(alphabet, L));
+    }
+
+    // function to generare first language, where each symbol in s appears even number of times
+    public static String generateFirstLanguage(ArrayList<String> alphabet, int M) {
+        String firstLanguage = "_ ";
+
+        int i = 2;
+        int counter = 0;
+
+        // this loop will run until we get the required number of words
+        while (counter != (M - 1)) {
+            // use generateWords() to generate all possible variants of words from a given alphabet
+            ArrayList<String> words = generateWords(alphabet, i);
+
+            for (String word : words) {
+                boolean flag = true;
+
+                // we will check every word to satisfy our conditions, and then break the loop,
+                // add new word into language and increase the counter
+                for (String letter : alphabet) {
+                    if (countSubstringOccurrences(word, letter) % 2 != 0) {
+                        flag = false;
+                        break;
+                    }
+                }
+
+                if (flag) {
+                    firstLanguage += word + " ";
+                    counter += 1;
+
+                    if (counter == (M - 1)) {
+                        return firstLanguage.trim();
+                    }
+                }
+            }
+            i += 2;
+        }
+        return firstLanguage.trim();
+    }
+
+    // function to generare second language, where all symbols from Σ are present in s
+    public static String generateSecondLanguage(ArrayList<String> alphabet, int K) {
+        String secondLanguage = "";
+
+        int counter = 0;
+        int i = alphabet.size();
+
+        // this loop will run until we get the required number of words
+        while (counter != K) {
+            // use generateWords() to generate all possible variants of words from a given alphabet
+            ArrayList<String> words = generateWords(alphabet, i);
+
+            for (String word : words) {
+                boolean flag = true;
+
+                // we will check every word to satisfy our conditions, and then break the loop,
+                // add new word into language and increase the counter
+                for (String letter : alphabet) {
+                    if (countSubstringOccurrences(word, letter) == 0) {
+                        flag = false;
+                        break;
+                    }
+                }
+
+                if (flag) {
+                    secondLanguage += word + " ";
+                    counter += 1;
+
+                    if (counter == K) {
+                        return secondLanguage.trim();
+                    }
+                }
+            }
+            i += 1;
+        }
+
+        return secondLanguage.trim();
+    }
+
+    // function to generare third language, where exactly one symbol from Σ does not appear in s
+    public static String generateThirdLanguage(ArrayList<String> alphabet, int L) {
+        if (alphabet.size() == 1) {
+            return "_";
+        }
+
+        String thirdLanguage = "";
+
+        int counter = 0;
+        int i = alphabet.size() - 1;
+
+        // this loop will run until we get the required number of words
+        while (counter != L) {
+            // use generateWords() to generate all possible variants of words from a given alphabet
+            ArrayList<String> words = generateWords(alphabet, i);
+
+            for (String word : words) {
+                // we will check every word to satisfy our conditions, and then break the loop,
+                // add new word into language and increase the counter
+                boolean flag = false;
+                ArrayList<Integer> amountsOfOccurrence = new ArrayList<>();
+
+                for (String letter : alphabet) {
+                    int amount = countSubstringOccurrences(word, letter);
+
+                    if (amount == 0 && !amountsOfOccurrence.contains(0)) {
+                        flag = true;
+                        amountsOfOccurrence.add(0);
+                    } else if (amount == 0 && amountsOfOccurrence.contains(0)) {
+                        flag = false;
+                        break;
+                    }
+                }
+
+                if (flag) {
+                    thirdLanguage += word + " ";
+                    counter += 1;
+
+                    if (counter == L) {
+                        return thirdLanguage.trim();
+                    }
+                }
+            }
+            i += 1;
+        }
+
+        return thirdLanguage.trim();
+    }
+
+    // functions generateWords() and generateWordsHelper() created to generate all possible variants of words 
+    // of language, using provided alphabet   
+    public static ArrayList<String> generateWords(ArrayList<String> alphabet, int K) {
+        ArrayList<String> words = new ArrayList<>();
+        generateWordsHelper(alphabet, K, "", words);
+        return words;
+    }
+
+    public static void generateWordsHelper(ArrayList<String> alphabet, int K, String word, ArrayList<String> words) {
+        if (word.length() == K) {
+            words.add(word);
+            return;
+        }
+
+        for (String letter : alphabet) {
+            generateWordsHelper(alphabet, K, word + letter, words);
+        }
+    }
+
+    // function countSubstringOccurrences() created to count all occurence substring into given string
+    public static int countSubstringOccurrences(String text, String substring) {
+        return (text.length() - text.replace(substring, "").length()) / substring.length();
+    }
+}
