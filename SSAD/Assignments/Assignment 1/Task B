@@ -1,0 +1,108 @@
+// C++ language
+
+#include <iostream>
+#include <iomanip>
+
+// Create a class Complex, which represents a complex number with the variables "real" and "imaginary" responsible for the corresponding parts of a complex number
+class Complex
+{
+private:
+    double real;
+    double imaginary;
+
+public:
+    Complex(double r = 0.0, double i = 0.0)
+        : real(r), imaginary(i)
+    {}
+
+    // Next we define the functional between two Complex objects, that is, two complex numbers
+
+    Complex operator+(const Complex &other) const
+    {
+        return Complex{real + other.real, imaginary + other.imaginary};
+    }
+
+    Complex operator-(const Complex &other) const
+    {
+        return Complex{real - other.real, imaginary - other.imaginary};
+    }
+
+    Complex operator*(const Complex &other) const
+    {
+        double newReal = real * other.real - imaginary * other.imaginary;
+        double newImag = real * other.imaginary + imaginary * other.real;
+        return Complex{newReal, newImag};
+    }
+
+    Complex operator/(const Complex &other) const
+    {
+        double denominator = other.real * other.real + other.imaginary * other.imaginary;
+        double newReal = (real * other.real + imaginary * other.imaginary) / denominator;
+        double newImag = (imaginary * other.real - real * other.imaginary) / denominator;
+        return Complex{newReal, newImag};
+    }
+
+    bool operator==(const Complex &other) const
+    {
+        return (real == other.real) && (imaginary == other.imaginary);
+    }
+
+    // return a well-formed string
+    std::string to_string()
+    {
+        std::ostringstream oss;
+        oss << std::fixed << std::setprecision(2) << real;
+        if (imaginary >= 0) oss << "+";
+        oss << std::fixed << std::setprecision(2) << imaginary << "i";
+        return oss.str();
+    }
+};
+
+int main()
+{
+    // Initialization and input of variables
+    int n;
+
+    std::cin >> n;
+
+    for (int i = 0; i < n; i++) {
+        char op;
+        double a, b, c, d;
+
+        std::cin >> op >> a >> b >> c >> d;
+
+        // Creating two Complex objects
+        Complex A(a, b);
+        Complex B(c, d);
+        Complex result;
+
+        // Use switch to recognize which function to apply to two complex numbers
+        switch (op) {
+            case '+':
+                result = A + B;
+                break;
+            case '-':
+                result = A - B;
+                break;
+            case '*':
+                result = A * B;
+                break;
+            case '/':
+                result = A / B;
+                break;
+            case '=':
+                if (A == B)
+                    std::cout << "true" << std::endl;
+                else
+                    std::cout << "false" << std::endl;
+                continue;
+            default:
+                continue;
+        }
+
+        // Output result
+        std::cout << result.to_string() << std::endl;
+    }
+
+    return 0;
+}
