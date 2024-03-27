@@ -1,0 +1,40 @@
+// Java language
+
+// Maksim Menshikh
+
+import java.util.Scanner;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner s = new Scanner(System.in);
+
+        // implement the keyword input
+        int N = s.nextInt();
+        int[] array = new int[N];
+        for (int i = 0; i < N; i++) {
+            array[i] = s.nextInt();
+        }
+
+        // use insertion sort to sort an array with numbers
+        insertionSort(array, N);
+
+        for (int num : array) {
+            System.out.print(num + " ");
+        }
+    }
+
+    // at each step of the algorithm we take one of the elements of the array, find the position to insert and insert.
+    public static void insertionSort(int[] array, int N) {
+        for (int i = 1; i < N; i++) {
+            int key = array[i];
+            int j = i - 1;
+
+            while (j >= 0 && array[j] > key) {
+                array[j + 1] = array[j];
+                j -= 1;
+            }
+
+            array[j + 1] = key;
+        }
+    }
+}
