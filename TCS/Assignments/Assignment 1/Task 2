@@ -1,0 +1,98 @@
+// C++ language
+
+#include <iostream>
+#include <vector>
+#include <string>
+
+using namespace std;
+
+// struct to represent a transition in the Finite State Automaton (FSA)
+struct Transition
+{
+    string state;
+    string input;
+    string newState;
+};
+
+int main()
+{
+    int Q, S, F, N;
+    cin >> Q >> S >> F >> N;
+
+    // initialize vectors and variables to store input data
+    vector<string> states(Q);
+    vector<string> alphabet(S);
+    vector<Transition> transitions;
+    string startState;
+    vector<string> finalStates(F);
+    vector<string> words(N);
+
+    // reading input data
+    for (int i = 0; i < Q; i++) {
+        cin >> states[i];
+    }
+
+    for (int i = 0; i < S; i++) {
+        cin >> alphabet[i];
+    }
+
+    for (int i = 0; i < Q * S; i++) {
+        Transition t;
+        cin >> t.state >> t.input >> t.newState;
+        transitions.push_back(t);
+    }
+
+    cin >> startState;
+
+    for (int i = 0; i < F; i++) {
+        cin >> finalStates[i];
+    }
+
+    for (int i = 0; i < N; i++) {
+        cin >> words[i];
+    }
+
+    // processing words and checking acceptance
+    for (const auto &word: words) {
+        string currentState = startState;
+        bool accepted = false;
+
+        for (char c: word) {
+            string s(1, c);
+            bool flag = false;
+
+            // find the next state based on current state and input symbol
+            for (const auto &transition: transitions) {
+                if (transition.state == currentState && transition.input == s) {
+                    currentState = transition.newState;
+                    flag = true;
+                    break;
+                }
+            }
+
+            // if a transition is not found, reject the word
+            if (!flag) {
+                accepted = false;
+                break;
+            }
+        }
+
+        // check if the final state is an accepting state
+        for (const auto &finalState: finalStates) {
+            if (currentState == finalState) {
+                accepted = true;
+                break;
+            }
+        }
+
+        // output "A " for Accept or "R " for Reject
+        if (accepted) {
+            cout << "A ";
+        }
+        else {
+            cout << "R ";
+        }
+    }
+
+    return 0;
+}
