@@ -1,0 +1,57 @@
+// C++ language
+
+#include <iostream>
+
+using namespace std;
+
+// This function updates an array element using a pointer
+void updateElement(int *arr, int i, int j)
+{
+    *(arr + i) = j;
+}
+
+// This function calculates the sum in a given index range by creating a variable "sum"
+// and adding the value of an array elements to it using a for loop and pointer
+int calculateSum(const int *arr, int i, int j)
+{
+    int sum = 0;
+    for (int k = i; k <= j; k++) {
+        sum += *(arr + k);
+    }
+    return sum;
+}
+
+int main()
+{
+    // initialization and input of variables
+    int n, m;
+    cin >> n >> m;
+
+    int arr[n];
+    for (int i = 0; i < n; i++) {
+        cin >> *(arr + i);
+    }
+
+    // Enters the operation into the console m times and displays the corresponding result
+    for (int i = 0; i < m; i++) {
+        string op;
+        int x, y;
+
+        cin >> op >> x >> y;
+
+        if (op == "sum") {
+            int result = calculateSum(arr, x, y);
+            cout << result << endl;
+        }
+        else if (op == "set") {
+            updateElement(arr, x, y);
+        }
+    }
+
+    // Outputting array elements
+    for (int i = 0; i < n; i++) {
+        cout << *(arr + i) << " ";
+    }
+
+    return 0;
+}
