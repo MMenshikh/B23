@@ -1,0 +1,249 @@
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+class Matrix
+{
+public:
+    int rows;
+    int columns;
+    vector<vector<int>> info;
+public:
+    Matrix(int n, int m)
+        : rows(n), columns(m)
+    {
+        info.resize(n, vector<int>(m, 0));
+    }
+
+    virtual void input()
+    {
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < columns; j++) {
+                cin >> info[i][j];
+            }
+        }
+    }
+
+    Matrix operator+(const Matrix &other)
+    {
+        if (rows != other.rows || columns != other.columns) {
+            Matrix errorMatrix(666, 666);
+            return errorMatrix;
+        }
+
+        Matrix result(rows, columns);
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < columns; j++) {
+                result.info[i][j] = info[i][j] + other.info[i][j];
+            }
+        }
+
+        return result;
+    }
+
+    Matrix operator-(const Matrix &other)
+    {
+        if (rows != other.rows || columns != other.columns) {
+            Matrix errorMatrix(666, 666);
+            return errorMatrix;
+        }
+
+        Matrix result(rows, columns);
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < columns; j++) {
+                result.info[i][j] = info[i][j] - other.info[i][j];
+            }
+        }
+
+        return result;
+    }
+
+    Matrix operator*(const Matrix &other)
+    {
+        if (columns != other.rows) {
+            Matrix errorMatrix(666, 666);
+            return errorMatrix;
+        }
+
+        Matrix result(rows, other.columns);
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < other.columns; j++) {
+                for (int k = 0; k < columns; k++) {
+                    result.info[i][j] += info[i][k] * other.info[k][j];
+                }
+            }
+        }
+
+        return result;
+    }
+
+    Matrix &operator=(const Matrix &other)
+    {
+        if (&other == this) return *this;
+
+        rows = other.rows;
+        columns = other.columns;
+        info = other.info;
+
+        return *this;
+    }
+
+    virtual void transpose()
+    {
+        vector<vector<int>> transposedInfo(columns, vector<int>(rows, 0));
+
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < columns; j++) {
+                transposedInfo[j][i] = info[i][j];
+            }
+        }
+        swap(rows, columns);
+        info = transposedInfo;
+    }
+
+    virtual void output() const
+    {
+        if (rows != 666 && columns != 666) {
+            for (int i = 0; i < rows; ++i) {
+                for (int j = 0; j < columns; ++j) {
+                    cout << info[i][j];
+                    if (j < columns - 1) {
+                        cout << " ";
+                    }
+                }
+                cout << endl;
+            }
+        }
+        else {
+            cout << "Error: the dimensional problem occurred\n";
+        }
+    }
+};
+
+class SquareMatrix: public Matrix
+{
+public:
+    explicit SquareMatrix(int n)
+        : Matrix(n, n)
+    {}
+
+    void input() override
+    {
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < columns; j++) {
+                cin >> info[i][j];
+            }
+        }
+    }
+
+    void output() const override
+    {
+        if (rows != 666 && columns != 666) {
+            for (int i = 0; i < rows; ++i) {
+                for (int j = 0; j < columns; ++j) {
+                    cout << info[i][j];
+                    if (j < columns - 1) {
+                        cout << " ";
+                    }
+                }
+                cout << endl;
+            }
+        }
+        else {
+            cout << "Error: the dimensional problem occurred\n";
+        }
+    }
+
+    Matrix *operator+(Matrix &other)
+    {
+        if (rows != other.rows || columns != other.columns) {
+            auto *errorMatrix = new SquareMatrix(666);
+            return errorMatrix;
+        }
+        auto *result = new SquareMatrix(rows);
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < columns; ++j) {
+                result->info[i][j] = info[i][j] + dynamic_cast<SquareMatrix *>(&other)->info[i][j];
+            }
+        }
+        return result;
+    }
+
+    Matrix *operator-(Matrix &other)
+    {
+        if (rows != other.rows || columns != other.columns) {
+            auto *errorMatrix = new SquareMatrix(666);
+            return errorMatrix;
+        }
+        auto *result = new SquareMatrix(rows);
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < columns; ++j) {
+                result->info[i][j] = info[i][j] - dynamic_cast<SquareMatrix *>(&other)->info[i][j];
+            }
+        }
+        return result;
+    }
+
+    Matrix *operator*(Matrix &other)
+    {
+        if (columns != other.rows) {
+            auto *errorMatrix = new SquareMatrix(666);
+            return errorMatrix;
+        }
+
+        auto *result = new SquareMatrix(rows);
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < rows; ++j) {
+                for (int k = 0; k < columns; ++k) {
+                    result->info[i][j] += info[i][k] * dynamic_cast<SquareMatrix *>(&other)->info[k][j];
+                }
+            }
+        }
+        return result;
+    }
+
+    void transpose() override
+    {
+        vector<vector<int>> transposedInfo(columns, vector<int>(rows, 0));
+
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < columns; j++) {
+                transposedInfo[j][i] = info[i][j];
+            }
+        }
+        swap(rows, columns);
+        info = transposedInfo;
+    }
+};
+
+int main()
+{
+    int n;
+
+    cin >> n;
+    SquareMatrix A(n);
+    A.input();
+
+    cin >> n;
+    SquareMatrix B(n);
+    B.input();
+
+    cin >> n;
+    SquareMatrix C(n);
+    C.input();
+
+    Matrix *D = A + B;
+    Matrix *E = B - A;
+    Matrix *F = C * A;
+    A.transpose();
+    SquareMatrix G = A;
+
+    D->output();
+    E->output();
+    F->output();
+    G.output();
+
+
+    return 0;
+}
