@@ -1,0 +1,99 @@
+// Java language
+
+// Maksim Menshikh
+
+import java.util.ArrayList;
+import java.util.Scanner;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        int n = scanner.nextInt();
+
+        Item[] items = new Item[n];
+
+        for (int i = 0; i < n; i++) {
+            int currentBid = scanner.nextInt();
+            int maximalBid = scanner.nextInt();
+            items[i] = new Item(currentBid, maximalBid, i);
+        }
+
+        MaksimMenshikh_bucket_srt(items);
+        items = reverseArray(items);
+        MaksimMenshikh_count_srt(items);
+
+        for (int i = n - 1; i >= 0; i--) {
+            System.out.print((items[i].index + 1) + " ");
+        }
+    }
+
+    public static void MaksimMenshikh_count_srt(Item[] items) {
+        int[] count = new int[100001];
+
+        for (Item item : items) {
+            count[item.currentBid]++;
+        }
+
+        for (int i = 1; i < count.length; i++) {
+            count[i] += count[i - 1];
+        }
+
+        Item[] sorted = new Item[items.length];
+
+        for (int i = items.length - 1; i >= 0; i--) {
+            int index = count[items[i].currentBid]--;
+            sorted[index - 1] = items[i];
+        }
+
+        for (int i = 0; i < items.length; i++) {
+            items[i] = sorted[i];
+        }
+    }
+
+    public static void MaksimMenshikh_bucket_srt(Item[] items) {
+        ArrayList<ArrayList<Item>> buckets = new ArrayList<>();
+
+        for (int i = 0; i < 100001; i++) {
+            buckets.add(new ArrayList<>());
+        }
+
+        for (Item item : items) {
+            buckets.get(item.maximalBid).add(item);
+        }
+
+        int index = 0;
+
+        for (ArrayList<Item> bucket : buckets) {
+            for (Item item : bucket) {
+                items[index++] = item;
+            }
+        }
+    }
+
+    public static Item[] reverseArray(Item[] arr) {
+        int start = 0;
+        int end = arr.length;
+
+        Item[] newArr = new Item[arr.length];
+
+        while (start < end) {
+            newArr[start] = arr[end - start - 1];
+            start++;
+        }
+
+        return newArr;
+    }
+
+    static class Item {
+        int currentBid;
+        int maximalBid;
+        int index;
+
+        public Item(int currentBid, int maximalBid, int index) {
+            this.currentBid = currentBid;
+            this.maximalBid = maximalBid;
+            this.index = index;
+        }
+    }
+}
