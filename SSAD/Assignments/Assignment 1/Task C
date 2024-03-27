@@ -1,0 +1,145 @@
+// C++ language
+
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+// Create an abstract DataStructure class with the functions insert(), remove() and search()
+class DataStructure
+{
+public:
+    virtual void insert(int x) = 0;
+    virtual void remove() = 0;
+    virtual bool search(int x) const = 0;
+};
+
+// Create an abstract SequentialDataStructure class with the functions pushBack(), pushFront(), popBack() and popFront()
+class SequentialDataStructure: public DataStructure
+{
+public:
+    virtual void pushBack(int x) = 0;
+    virtual void pushFront(int x) = 0;
+    virtual void popBack() = 0;
+    virtual void popFront() = 0;
+};
+
+// Create an abstract DynamicDataStructure class with the functions resize() and clear()
+class DynamicDataStructure: public DataStructure
+{
+public:
+    virtual void resize(int new_size) = 0;
+    virtual void clear() = 0;
+};
+
+// Create a List class that implements all the functions of parent classes, using functional of std::vector
+class List: public SequentialDataStructure, public DynamicDataStructure
+{
+private:
+    vector<int> components;
+
+public:
+    void insert(int x) override
+    {
+        components.push_back(x);
+    }
+
+    void remove() override
+    {
+        if (!components.empty()) {
+            components.pop_back();
+        }
+    }
+
+    bool search(int x) const override
+    {
+        for (int i = 0; i < components.size(); i++) {
+            if (components[i] == x) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void pushBack(int x) override
+    {
+        components.push_back(x);
+    }
+
+    void pushFront(int x) override
+    {
+        components.insert(components.begin(), x);
+    }
+
+    void popBack() override
+    {
+        if (!components.empty()) {
+            components.pop_back();
+        }
+    }
+
+    void popFront() override
+    {
+        if (!components.empty()) {
+            components.erase(components.begin());
+        }
+    }
+
+    void resize(int new_size) override
+    {
+        components.resize(new_size);
+    }
+
+    void clear() override
+    {
+        components.clear();
+    }
+
+    void printList() const
+    {
+        for (int comp: components) {
+            cout << comp << " ";
+        }
+        cout << endl;
+    }
+};
+
+int main()
+{
+    // Initialisation and input variables
+    int n;
+
+    cin >> n;
+
+    // Create List object
+    List list;
+
+    for (int i = 0; i < n; i++) {
+        string operation;
+        cin >> operation;
+
+        // Recognize which function is requested and use the appropriate one
+        if (operation == "insert") {
+            int x;
+            cin >> x;
+            list.insert(x);
+        }
+        else if (operation == "remove") {
+            list.remove();
+        }
+        else if (operation == "search") {
+            int x;
+            cin >> x;
+            if (list.search(x)) {
+                cout << "YES" << endl;
+            }
+            else {
+                cout << "NO" << endl;
+            }
+        }
+    }
+
+    list.printList();
+
+    return 0;
+}
