@@ -1,0 +1,434 @@
+// C language
+
+/*The program presented below represents a sports team management system.*/
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+/*Creating an enum to define the positions of the players.*/
+enum Position {
+    Goalkeeper,
+    Defender,
+    Midfielder,
+    Forward
+};
+/*defining a Player structure that contains a unique ID, name, position, age, number of goals
+ * and a parameter responsible for whether the player is removed or not*/
+struct Player {
+    int ID;
+    char name[1001];
+    enum Position position;
+    int age;
+    int numberOfGoals;
+    int deleted;
+};
+
+/*Below is a function to return the string value of the player's position, after returning from enum*/
+char *parse_position(enum Position position) {
+    switch (position) {
+        case Goalkeeper:
+            return "Goalkeeper";
+        case Defender:
+            return "Defender";
+        case Midfielder:
+            return "Midfielder";
+        case Forward:
+            return "Forward";
+    }
+}
+
+/*Below is a function for determining whether a player's name contains only English letters.
+ * Using a for loop, the function goes through all the values and sees if they are included in the list of valid characters.
+ * If the result is positive, the function returns 1, if the result is negative, 0.*/
+int allValid(int N, char Name[N]) {
+    char validSymbols[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    for (int i = 0; i < N; i++) {
+        if (strchr(validSymbols, Name[i]) == NULL) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+/*Below is a function to determine whether a file string is a valid attribute for the "add" or "update" command.
+ * The function compares the received value with each of the valid position options
+ * and returns 1 if the attribute is correct, 0 if not*/
+int validPosition(char Position[]) {
+    if (strcmp(Position, "Goalkeeper") != 0) {
+        if (strcmp(Position, "Defender") != 0) {
+            if (strcmp(Position, "Midfielder") != 0) {
+                if (strcmp(Position, "Forward") != 0) {
+                    return 0;
+                }
+            }
+        }
+    }
+
+    return 1;
+}
+
+/*Below is a function of whether all characters in the resulting string are digits or not.
+ * The function will return 1 if the received string consists only of numbers, 0 if not*/
+int isDigit(int N, char string[N]) {
+    char digits[] = "0123456789";
+
+    for (int i = 0; i < N; i++) {
+        if (strchr(digits, string[i]) == NULL) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+
+int main() {
+    char command[1001];
+
+    /*Initializing the "Player" structure*/
+    struct Player player[1001];
+
+    /*"i" is a counter equal to the number of players in the team*/
+    int i = 0;
+
+    char mainSymbols[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    /*opening the file "input.txt" for reading and checking to see if an error occurs when opening it*/
+    FILE *f = fopen("input.txt", "r");
+
+    if (f == NULL) {
+        fclose(f);
+        FILE *fout = fopen("output.txt", "w");
+        fprintf(fout, "Invalid inputs\n");
+        fclose(fout);
+        return 0;
+    }
+
+    /*opening the file "output.txt" for writing*/
+    FILE *fout = fopen("output.txt", "w");
+
+    /*create an infinite loop so that commands can be entered endlessly until the “Display” command is encountered
+     * or there is incorrect input*/
+    while (1) {
+        /*read the command from the file*/
+        fscanf(f, "%s", &command);
+
+        /*Below is a branched condition that checks which command we considered;
+         * if the command is not among the valid ones, “Invalid inputs” will be output to the file “output.txt”*/
+        if (strcmp(command, "Add") == 0) {
+            /*Next comes the initialization of the variables "CheckID, checkName ..."
+             * Those variables that begin with capital letters must be numbers,
+             * but we need to check whether they are actually numbers,
+             * otherwise the program will display "Invalid inputs" in "output.txt" "*/
+            char CheckID[1001];
+            char checkName[1001];
+            char checkPosition[1001];
+            char CheckAge[1001];
+            char CheckNumberOfGoals[1001];
+
+            int checkID;
+            int checkAge;
+            int checkNumberOfGoals;
+
+            /*The "allChecks" variable is equal to 1 by default. If during further checks some input is incorrect,
+             * then the "allChecks" variable will immediately return to 0*/
+            int allChecks = 1;
+
+            /*reading attributes from a file*/
+            fscanf(f, "%s", &CheckID);
+            fscanf(f, "%s", &checkName);
+            fscanf(f, "%s", &checkPosition);
+            fscanf(f, "%s", &CheckAge);
+            fscanf(f, "%s", &CheckNumberOfGoals);
+
+            /*Next comes a check of all variables that should be represented as a number, whether they are actually numbers*/
+            if (isDigit(strlen(CheckID), CheckID) == 0) {
+                fprintf(fout, "Invalid inputs\n");
+                return 0;
+            } else {
+                checkID = atoi(CheckID);
+            }
+
+            if (isDigit(strlen(CheckAge), CheckAge) == 0) {
+                fprintf(fout, "Invalid inputs\n");
+                return 0;
+            } else {
+                checkAge = atoi(CheckAge);
+            }
+
+            if (isDigit(strlen(CheckNumberOfGoals), CheckNumberOfGoals) == 0) {
+                fprintf(fout, "Invalid inputs\n");
+                return 0;
+            } else {
+                checkNumberOfGoals = atoi(CheckNumberOfGoals);
+            }
+
+            /*Next comes a check to see if the player ID is unique. Using a loop,
+             * the program compares the entered ID with all available ones*/
+            for (int j = 0; j < i; j++) {
+                if (player[j].ID == checkID && player[j].deleted == 0) {
+                    allChecks = 0;
+                    break;
+                }
+            }
+
+            /*Checking whether the first character of the player's name is a capital letter*/
+            if (strchr(mainSymbols, checkName[0]) == NULL) {
+                allChecks = 0;
+            }
+
+            /*Checking for player name length*/
+            if (strlen(checkName) > 15 || strlen(checkName) < 2) {
+                allChecks = 0;
+            }
+
+            /*Checking whether the player's name consists only of English letters*/
+            if (allValid(strlen(checkName), checkName) == 0) {
+                allChecks = 0;
+            }
+
+            /*Checking the player's age limits*/
+            if (checkAge < 18 || checkAge > 100) {
+                allChecks = 0;
+            }
+
+            /*checking the limits of a player's number of goals*/
+            if (checkNumberOfGoals < 0 || checkNumberOfGoals > 999) {
+                allChecks = 0;
+            }
+
+            /*Checking whether the player's position is one of the valid ones*/
+            if (validPosition(checkPosition) == 0) {
+                allChecks = 0;
+            }
+
+            /*If all attributes of adding a player were successful and the "allChecks" variable is equal to 1,
+             * then the program adds all data about the player to the list of "Player" structures*/
+            if (allChecks == 1) {
+                player[i].ID = checkID;
+                strcpy(player[i].name, checkName);
+
+                enum Position playerPosition;
+
+                if (strcmp(checkPosition, "Goalkeeper") == 0) {
+                    playerPosition = Goalkeeper;
+                } else if (strcmp(checkPosition, "Defender") == 0) {
+                    playerPosition = Defender;
+                } else if (strcmp(checkPosition, "Midfielder") == 0) {
+                    playerPosition = Midfielder;
+                } else if (strcmp(checkPosition, "Forward") == 0) {
+                    playerPosition = Forward;
+                }
+
+                player[i].position = playerPosition;
+                player[i].age = checkAge;
+                player[i].numberOfGoals = checkNumberOfGoals;
+                player[i].deleted = 0;
+
+                i++;
+            } else {
+                fprintf(fout, "Invalid inputs\n");
+                return 0;
+            }
+        } else if (strcmp(command, "Delete") == 0) {
+            /*When checking the attributes of the "Delete" command,
+             * we also check whether the received attribute is a number and whether this player can be deleted
+             * by comparing his ID with all the available ones. If the player can be deleted, we add his parameter "deleted" to 1.
+             * If the player cannot be deleted,
+             * the program will print "Impossible to delete" and continue the program.*/
+            char RemoteID[1001];
+            int remoteID;
+            int mayDelete = 0;
+
+            fscanf(f, "%s", &RemoteID);
+
+            if (isDigit(strlen(RemoteID), RemoteID) == 0 || strcmp(RemoteID, "") == 0 || strcmp(RemoteID, "\n") == 0) {
+                fprintf(fout, "Invalid inputs\n");
+                return 0;
+            } else {
+                remoteID = atoi(RemoteID);
+            }
+
+            for (int j = 0; j < i; j++) {
+                if (player[j].ID == remoteID && player[j].deleted != 1) {
+                    mayDelete = 1;
+                    player[j].deleted = 1;
+                    break;
+                }
+            }
+            if (mayDelete == 0) {
+                fprintf(fout, "Impossible to delete\n");
+            }
+        } else if (strcmp(command, "Search") == 0) {
+            /*When checking the attributes of the "Search" command, we also check whether the received attribute is a number
+             * and go through all the players using a loop. If a player with such an ID finds it,
+             * then we conclude that we found it; if not, we conclude that we did not find it.*/
+            int searchedID;
+            char SearchedID[1001];
+
+            fscanf(f, "%s", &SearchedID);
+
+            if (isDigit(strlen(SearchedID), SearchedID) == 0 || strcmp(SearchedID, "") == 0 ||
+                strcmp(SearchedID, "\n") == 0) {
+                fprintf(fout, "Invalid inputs\n");
+                return 0;
+            } else {
+                searchedID = atoi(SearchedID);
+            }
+            int searchedCheck = 0;
+
+            for (int j = 0; j < i + 1; j++) {
+                if (player[j].ID == searchedID && player[j].deleted == 0) {
+                    fprintf(fout, "Found\n");
+                    searchedCheck++;
+                    break;
+                }
+            }
+            if (searchedCheck == 0) {
+                fprintf(fout, "Not found\n");
+            }
+        } else if (strcmp(command, "Display") == 0) {
+            /*When using the "Display" command, the program goes through the list of all players and looks to see if it is not deleted,
+             * then it can be output to the output file; if it is deleted, then not.*/
+            int numberOfPlayers = 0;
+            for (int j = 0; j < i; j++) {
+                if (player[j].deleted == 0) {
+                    numberOfPlayers++;
+                }
+            }
+            if (numberOfPlayers != 0) {
+                for (int j = 0; j < i; j++) {
+                    if (player[j].deleted == 0) {
+                        char *position = parse_position(player[j].position);
+
+                        fprintf(fout, "ID: %d, Name: %s, Position: %s, Age: %d, Goals: %d\n", player[j].ID,
+                                player[j].name,
+                                position, player[j].age, player[j].numberOfGoals);
+                    }
+                }
+            } else {
+                fprintf(fout, "Invalid inputs\n");
+            }
+            return 0;
+        } else if (strcmp(command, "Update") == 0) {
+            /*For the "Update" command, the program performs the same attribute checks as for the "Add" command.
+             * The program also checks whether the player information can be updated or not.
+             * It can only be updated if the player is not deleted and exists at all*/
+            char UpdatedID[1001];
+            int updatedID;
+            int mayUpdate = 0;
+
+            fscanf(f, "%s", &UpdatedID);
+
+            if (isDigit(strlen(UpdatedID), UpdatedID) == 0) {
+                fprintf(fout, "Invalid inputs\n");
+                return 0;
+            } else {
+                updatedID = atoi(UpdatedID);
+            }
+            for (int j = 0; j < i; j++) {
+                if (player[j].ID == updatedID) {
+                    mayUpdate = 1;
+                    break;
+                }
+            }
+            if (mayUpdate == 1) {
+                for (int j = 0; j < i; j++) {
+                    if (player[j].ID == updatedID && player[j].deleted == 0) {
+                        char checkName[1001];
+                        char checkPosition[1001];
+                        char CheckAge[1001];
+                        char CheckNumberOfGoals[1001];
+
+                        int checkAge;
+                        int checkNumberOfGoals;
+                        int allChecks = 1;
+
+                        fscanf(f, "%s", &checkName);
+                        fscanf(f, "%s", &checkPosition);
+                        fscanf(f, "%s", &CheckAge);
+                        fscanf(f, "%s", &CheckNumberOfGoals);
+
+                        if (isDigit(strlen(CheckAge), CheckAge) == 0) {
+                            fprintf(fout, "Invalid inputs\n");
+                            return 0;
+                        } else {
+                            checkAge = atoi(CheckAge);
+                        }
+
+                        if (isDigit(strlen(CheckNumberOfGoals), CheckNumberOfGoals) == 0) {
+                            fprintf(fout, "Invalid inputs\n");
+                            return 0;
+                        } else {
+                            checkNumberOfGoals = atoi(CheckNumberOfGoals);
+                        }
+
+                        if (strchr(mainSymbols, checkName[0]) == NULL) {
+                            allChecks = 0;
+                        }
+
+                        if (strlen(checkName) > 15 || strlen(checkName) < 2) {
+                            allChecks = 0;
+                        }
+
+                        if (allValid(strlen(checkName), checkName) == 0) {
+                            allChecks = 0;
+                        }
+
+                        if (checkAge < 18 || checkAge > 100) {
+                            allChecks = 0;
+                        }
+
+                        if (checkNumberOfGoals < 0 || checkNumberOfGoals > 999) {
+                            allChecks = 0;
+                        }
+
+                        if (validPosition(checkPosition) == 0) {
+                            allChecks = 0;
+                        }
+
+                        if (allChecks == 1) {
+                            strcpy(player[j].name, checkName);
+
+                            enum Position playerPosition;
+
+                            if (strcmp(checkPosition, "Goalkeeper") == 0) {
+                                playerPosition = Goalkeeper;
+                            } else if (strcmp(checkPosition, "Defender") == 0) {
+                                playerPosition = Defender;
+                            } else if (strcmp(checkPosition, "Midfielder") == 0) {
+                                playerPosition = Midfielder;
+                            } else if (strcmp(checkPosition, "Forward") == 0) {
+                                playerPosition = Forward;
+                            }
+
+                            player[j].position = playerPosition;
+                            player[j].age = checkAge;
+                            player[j].numberOfGoals = checkNumberOfGoals;
+                        } else {
+                            fprintf(fout, "Invalid inputs\n");
+                            return 0;
+                        }
+                    }
+                }
+
+                /*In all cases of incorrect input, the program outputs "Invalid inputs" to the output file and finishes processing*/
+            } else {
+                fprintf(fout, "Invalid inputs\n");
+                return 0;
+            }
+        } else {
+            fprintf(fout, "Invalid inputs\n");
+            return 0;
+        }
+    }
+
+    /*Closing the input and output files*/
+    fclose(f);
+    fclose(fout);
+
+    return 0;
+}
