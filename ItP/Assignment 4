@@ -1,1 +1,1695 @@
+// Java language
 
+/**
+ * This program simulates the insects moving game.
+ * The program considers four types of insects: Ants, Butterflies, Spiders, and Grasshoppers.
+ * - Ants can move vertically, horizontally, and diagonally.
+ * - Butterflies can move only vertically and horizontally.
+ * - Spiders can move only diagonally.
+ * - Grasshoppers can jump only vertically and horizontally but by skipping odd fields.
+ * In addition to insects, the board can contain the food points with the specific amount of food. For the purpose of this game we will consider that all insects eat the same type of food.
+ * The goal of each insect is by collecting as much food as possible to try to leave the board. However, each insect can choose only one direction and move only in this direction for the rest of time
+ */
+
+import java.util.*;
+import java.io.*;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+
+/**
+ * This is the main class that represents the starting point of the program.
+ * It reads input data from a file, creates entities based on the input, processes the data,
+ * and writes the result to an output file.
+ */
+public class Main {
+    /**
+     * The main method reads input data, processes it, and writes the result to an output file.
+     *
+     * @param args The command line arguments
+     */
+    public static void main(String[] args) {
+        /**
+         * - It reads data from the "input.txt" file and initializes variables such as D, N, and M.
+         * - It creates a Board object and an ArrayList of Insect objects.
+         * - It reads information about N insects and adds them to the board and the ArrayList.
+         * - It reads information about M food points and adds them to the board.
+         * - It retrieves a string from the Exception message and initializes a text variable to store the result.
+         * - It iterates through the insects, calculates the best direction and amount, and appends the result to the text variable.
+         * - It writes the result to an "output.txt" file or the exception message if not correct.
+         */
+        try (FileInputStream in = new FileInputStream("input.txt")) {
+            byte[] buffer = new byte[in.available()];
+            in.read(buffer, 0, buffer.length);
+
+            File file = new File("input.txt");
+            Scanner s = new Scanner(file);
+
+            int D = s.nextInt();
+            int N = s.nextInt();
+            int M = s.nextInt();
+
+            Board board = new Board(D);
+            ArrayList<Insect> insects = new ArrayList<Insect>();
+
+            /**
+             * This block of code processes the input data for insects and food points and adds them to the board and the list of insects.
+             * It iterates through N insects and creates respective objects based on the input data.
+             * It checks the type of the insect and adds it to the board and the list of insects accordingly.
+             * It then iterates through M food points and creates FoodPoint objects based on the input data, adding them to the board.
+             */
+            for (int i = 0; i < N; i++) {
+                String Color = s.next();
+                String InsectType = s.next();
+                int XCoordinate = s.nextInt();
+                int YCoordinate = s.nextInt();
+
+                if (InsectType.equals("Ant")) {
+                    Ant ant = new Ant(new EntityPosition(XCoordinate, YCoordinate), InsectColor.toColor(Color));
+                    board.addEntity(ant);
+                    insects.add(ant);
+                }
+
+                if (InsectType.equals("Butterfly")) {
+                    Butterfly butterfly = new Butterfly(new EntityPosition(XCoordinate, YCoordinate), InsectColor.toColor(Color));
+                    board.addEntity(butterfly);
+                    insects.add(butterfly);
+                }
+
+                if (InsectType.equals("Spider")) {
+                    Spider spider = new Spider(new EntityPosition(XCoordinate, YCoordinate), InsectColor.toColor(Color));
+                    board.addEntity(spider);
+                    insects.add(spider);
+                }
+
+                if (InsectType.equals("Grasshopper")) {
+                    Grasshopper grasshopper = new Grasshopper(new EntityPosition(XCoordinate, YCoordinate), InsectColor.toColor(Color));
+                    board.addEntity(grasshopper);
+                    insects.add(grasshopper);
+                }
+            }
+
+            for (int i = 0; i < M; i++) {
+                int FoodAmount = s.nextInt();
+                int XCoordinate = s.nextInt();
+                int YCoordinate = s.nextInt();
+
+                FoodPoint foodPoint = new FoodPoint(new EntityPosition(XCoordinate, YCoordinate), FoodAmount);
+
+                board.addEntity(foodPoint);
+            }
+
+            /**
+             * Processes the specified parameters and determines the best direction for each insect to travel in and the amount of food it can collect in that direction.
+             *
+             * @param D The size of board.
+             * @param N The number of insects.
+             * @param M The number of food points.
+             * @param board The game board containing data on which the insects should travel.
+             * @return A string containing the color, name, the best direction, and amount of food each insect can collect in a formatted representation.
+             */
+            Exception exception = new Exception();
+            String pre_text = exception.getMessage(D, N, M, board.getBoardData());
+
+            String text = "";
+            for (int i = 0; i < N; i++) {
+                Direction bestDirecrion = insects.get(i).GetBestDirection(board.getBoardData(), D);
+                int bestAmount = insects.get(i).TravelDirection(bestDirecrion, board.getBoardData(), D);
+
+                String insectColor = insects.get(i).color.toString().substring(0, 1) + insects.get(i).color.toString().substring(1).toLowerCase();
+                String insectName = insects.get(i).getClass().getSimpleName();
+
+
+                text += insectColor + " " + insectName + " " + bestDirecrion.getTextRepresentation() + " " + bestAmount + "\n";
+            }
+
+            /**
+             * Attempts to write the text to an output file and handles different types of exceptions that may occur during the process.
+             * Closes the input stream after writing to the file.
+             *
+             * @param pre_text The text to be written to the output file if input data contains exceptions.
+             * @param text The text to be written to the output file if the input data is Correct.
+             * @param s The input stream used for reading.
+             * @throws FileNotFoundException If the input file is not found.
+             * @throws IOException If an error occurs while reading or writing the file.
+             * @throws NullPointerException If a null pointer exception is encountered.
+             * @throws IndexOutOfBoundsException If an invalid insect type is encountered.
+             * @throws NoSuchElementException If an invalid number of insects is encountered.
+             */
+            try {
+                FileOutputStream fos = new FileOutputStream("output.txt");
+                byte[] textBytes;
+                if (pre_text.equals("Correct")) {
+                    textBytes = text.getBytes();
+                } else {
+                    textBytes = pre_text.getBytes();
+                }
+                fos.write(textBytes);
+                fos.close();
+            } catch (IOException e) {
+
+            }
+
+            s.close();
+
+        } catch (FileNotFoundException e) {
+            System.out.println("Input file not found");
+        } catch (IOException e) {
+            System.out.println("Error reading/writing the file.");
+        } catch (NullPointerException e) {
+            try {
+                FileOutputStream fos = new FileOutputStream("output.txt");
+                byte[] textBytes = "Invalid insect color\n".getBytes();
+                fos.write(textBytes);
+                fos.close();
+            } catch (IOException ignored) {
+            }
+        } catch (IndexOutOfBoundsException e) {
+            try {
+                FileOutputStream fos = new FileOutputStream("output.txt");
+                byte[] textBytes = "Invalid insect type\n".getBytes();
+                fos.write(textBytes);
+                fos.close();
+            } catch (IOException ignored) {
+            }
+        } catch (NoSuchElementException e) {
+            try {
+                FileOutputStream fos = new FileOutputStream("output.txt");
+                byte[] textBytes = "Invalid number of insects\n".getBytes();
+                fos.write(textBytes);
+                fos.close();
+            } catch (IOException ignored) {
+            }
+        }
+    }
+}
+
+/**
+ * The EntityPosition class represents a position on the game board with x and y coordinates.
+ */
+class EntityPosition {
+
+    /**
+     * The x-coordinate of the position.
+     */
+    private int x;
+
+    /**
+     * The y-coordinate of the position.
+     */
+    private int y;
+
+    /**
+     * Constructs a new EntityPosition with the given x and y coordinates.
+     *
+     * @param x the x-coordinate of the position
+     * @param y the y-coordinate of the position
+     */
+    public EntityPosition(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    /**
+     * Retrieves a string representation of the position.
+     *
+     * @return a string representation of the position
+     */
+    public String getPositionString() {
+        return x + " " + y;
+    }
+}
+
+/**
+ * The BoardEntity class represents entities that can exist on the game board with a specific position.
+ */
+abstract class BoardEntity {
+    /**
+     * The position of the entity on the board.
+     */
+    protected EntityPosition entityPosition;
+}
+
+/**
+ * The FoodPoint class represents a food entity on the board with a specific position and value.
+ */
+class FoodPoint extends BoardEntity {
+    /**
+     * The value of the food point.
+     */
+    protected int value;
+
+    /**
+     * The position of the food point on the board.
+     */
+    EntityPosition position;
+
+
+    /**
+     * Constructs a new FoodPoint with the given position and value.
+     *
+     * @param position the position of the food point
+     * @param value    the value of the food point
+     */
+    public FoodPoint(EntityPosition position, int value) {
+        this.position = position;
+        this.value = value;
+    }
+
+
+    /**
+     * Retrieves the value of the food point.
+     *
+     * @return the value of the food point
+     */
+    public int getValue() {
+        return this.value;
+    }
+}
+
+/**
+ * The Board class represents a game board with board data and size.
+ */
+class Board {
+
+    /**
+     * Map to store the board data with entity positions as keys and BoardEntity objects as values.
+     */
+    private Map<String, BoardEntity> boardData = new HashMap<>();
+
+    /**
+     * The size of the board(DxD).
+     */
+    private int size;
+
+    /**
+     * Constructs a new Board with the given size(DxD).
+     *
+     * @param boardSize the size of the board
+     */
+    public Board(int boardSize) {
+    }
+
+    /**
+     * Retrieves the map containing the board data.
+     *
+     * @return the map of board data
+     */
+    public Map<String, BoardEntity> getBoardData() {
+        return boardData;
+    }
+
+    /**
+     * Adds a new BoardEntity to the board.
+     *
+     * @param entity the entity to add to the board
+     */
+    public void addEntity(BoardEntity entity) {
+        if ((entity) instanceof Insect) {
+            boardData.put(((Insect) entity).position.getPositionString(), entity);
+        }
+
+        if ((entity) instanceof FoodPoint) {
+            boardData.put(((FoodPoint) entity).position.getPositionString(), entity);
+        }
+    }
+
+    /**
+     * Retrieves the BoardEntity at the given position.
+     *
+     * @param position the position of the entity
+     * @return the BoardEntity type at the given position
+     */
+    public BoardEntity getEntity(EntityPosition position) {
+        String Position = position.getPositionString();
+        return boardData.get(Position);
+    }
+
+    /**
+     * Retrieves the best direction of movement for the given insect on the board.
+     *
+     * @param insect the insect to get the best direction for
+     * @return the direction of movement for the insect
+     */
+    public Direction getDirection(Insect insect) {
+        return insect.GetBestDirection(boardData, boardData.size());
+    }
+
+    /**
+     * Retrieves the sum of all points on the directions for the given insect on the board.
+     *
+     * @param insect the insect to get the sum of movement directions for
+     * @return the sum of all points on the directions for the insect
+     */
+    public int getDirectionSum(Insect insect) {
+        return insect.TravelDirection(getDirection(insect), boardData, boardData.size());
+    }
+}
+
+/**
+ * Represents an abstract Insect on the game board.
+ */
+abstract class Insect extends BoardEntity {
+
+    /**
+     * The color of the insect.
+     */
+    protected InsectColor color;
+
+    /**
+     * The position of the insect on the board(XCoordinate, YCoordinate).
+     */
+    EntityPosition position;
+
+    /**
+     * Constructs an Insect with the specified position and color.
+     *
+     * @param position the position of the insect on the board(XCoordinate, YCoordinate).
+     * @param color    the color of the insect
+     */
+    public Insect(EntityPosition position, InsectColor color) {
+        this.position = position;
+        this.color = color;
+    }
+
+    /**
+     * Gets the best direction for the insect to move based on the board data and size.
+     *
+     * @param boardData the map of the board
+     * @param boardSize the size of the board(DxD)
+     * @return the best direction for the insect to move
+     */
+    public abstract Direction GetBestDirection(Map<String, BoardEntity> boardData, int boardSize);
+
+    /**
+     * Travels in the specified direction and returns the amount of possible points.
+     *
+     * @param dir       the direction in which the insect should move
+     * @param boardData the map of the board
+     * @param boardSize the size of the board(DxD)
+     * @return the amount of possible points after traveling in the specified direction
+     */
+    public abstract int TravelDirection(Direction dir, Map<String, BoardEntity> boardData, int boardSize);
+
+}
+
+/**
+ * Represents an Ant insect on the game board.
+ */
+class Ant extends Insect implements OrthogonalMoving, DiagonalMoving {
+
+    /**
+     * Constructs an Ant with the specified position and color.
+     *
+     * @param position the position of the ant on the board(XCoordinate, YCoordinate)
+     * @param color    the color of the ant
+     */
+    public Ant(EntityPosition position, InsectColor color) {
+        super(position, color);
+        this.position = position;
+        this.color = color;
+    }
+
+    /**
+     * Tries all possible directions where could go an ant, counts the number of possible food points and returns the direction with the most food
+     *
+     * @param boardData the map of the board
+     * @param boardSize the size of the board(DxD)
+     * @return returns the direction with the most food
+     */
+    @Override
+    public Direction GetBestDirection(Map<String, BoardEntity> boardData, int boardSize) {
+        ArrayList<Direction> directions = new ArrayList<Direction>();
+        int maximumAmount = 0;
+        Direction maximumDirection = Direction.N;
+
+        directions.add(Direction.N);
+        directions.add(Direction.E);
+        directions.add(Direction.S);
+        directions.add(Direction.W);
+        directions.add(Direction.NE);
+        directions.add(Direction.SE);
+        directions.add(Direction.SW);
+        directions.add(Direction.NW);
+
+        for (int i = 0; i < 8; i++) {
+            if (i < 4) {
+                int possibleAmount = getOrthogonalDirectionVisibleValue(directions.get(i), position, boardData, boardSize);
+                if (possibleAmount > maximumAmount) {
+                    maximumAmount = possibleAmount;
+                    maximumDirection = directions.get(i);
+                }
+            }
+            if (i > 3) {
+                int possibleAmount = getDiagonalDirectionVisibleValue(directions.get(i), position, boardData, boardSize);
+                if (possibleAmount > maximumAmount) {
+                    maximumAmount = possibleAmount;
+                    maximumDirection = directions.get(i);
+                }
+            }
+        }
+        return maximumDirection;
+    }
+
+    /**
+     * Simulates an Ant's travel, calculates how much food it can collect in the best direction and updates the board
+     *
+     * @param dir       the direction in which the ant should go
+     * @param boardData the map of the board
+     * @param boardSize the size of the board(DxD)
+     * @return the amount of food points after traveling in the specified direction
+     */
+    @Override
+    public int TravelDirection(Direction dir, Map<String, BoardEntity> boardData, int boardSize) {
+        if (dir.getTextRepresentation().equals("North") || dir.getTextRepresentation().equals("South") || dir.getTextRepresentation().equals("East") || dir.getTextRepresentation().equals("West")) {
+            return travelOrthogonally(dir, position, color, boardData, boardSize);
+        } else {
+            return travelDiagonally(dir, position, color, boardData, boardSize);
+        }
+    }
+
+    /**
+     * Gets the amount of possible points visible after going in the specified direction.
+     *
+     * @param dir            the direction in which the ant is attempting to go
+     * @param entityPosition the position of the entity(XCoordinate, YCoordinate)
+     * @param boardData      the map of the board
+     * @param boardSize      the size of the board(DxD)
+     * @return the amount of possible points after going
+     */
+    @Override
+    public int getOrthogonalDirectionVisibleValue(Direction dir, EntityPosition entityPosition, Map<String, BoardEntity> boardData, int boardSize) {
+        int possibleAmount = 0;
+        int XCoordinate = Integer.parseInt(entityPosition.getPositionString().split(" ")[0]);
+        int YCoordinate = Integer.parseInt(entityPosition.getPositionString().split(" ")[1]);
+
+        if (dir.getTextRepresentation().equals("North")) {
+            for (int i = XCoordinate; i > 0; i--) {
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if ((str.getValue() instanceof FoodPoint) && (str.getKey().equals(i + " " + YCoordinate))) {
+                        possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("South")) {
+            for (int i = XCoordinate; i < boardSize + 1; i++) {
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if ((str.getValue() instanceof FoodPoint) && (str.getKey().equals(i + " " + YCoordinate))) {
+                        possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("East")) {
+            for (int i = YCoordinate; i < boardSize + 1; i++) {
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if ((str.getValue() instanceof FoodPoint) && (str.getKey().equals(XCoordinate + " " + i))) {
+                        possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("West")) {
+            for (int i = YCoordinate; i > 0; i--) {
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if ((str.getValue() instanceof FoodPoint) && (str.getKey().equals(XCoordinate + " " + i))) {
+                        possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                    }
+                }
+            }
+        }
+        return possibleAmount;
+    }
+
+    /**
+     * Attempts to travel in the specified direction after going, returns the amount of possible points and updates the desk.
+     *
+     * @param dir            the direction in which the ant should go
+     * @param entityPosition the position of the entity(XCoordinate, YCoordinate)
+     * @param color          the color of the ant
+     * @param boardData      the map of the board
+     * @param boardSize      the size of the board(DxD)
+     * @return the amount of possible points after traveling in the specified direction
+     */
+    @Override
+    public int travelOrthogonally(Direction dir, EntityPosition entityPosition, InsectColor color, Map<String, BoardEntity> boardData, int boardSize) {
+        ArrayList<String> toRemove = new ArrayList<String>();
+        int possibleAmount = 0;
+        int XCoordinate = Integer.parseInt(entityPosition.getPositionString().split(" ")[0]);
+        int YCoordinate = Integer.parseInt(entityPosition.getPositionString().split(" ")[1]);
+        toRemove.add(XCoordinate + " " + YCoordinate);
+
+        if (dir.getTextRepresentation().equals("North")) {
+            for (int i = XCoordinate; i > 0; i--) {
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if (str.getKey().equals(i + " " + YCoordinate)) {
+                        if ((str.getValue() instanceof FoodPoint)) {
+                            possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                            toRemove.add(str.getKey());
+                        }
+
+                        if ((str.getValue() instanceof Insect) && !(((Insect) str.getValue()).color).equals(color)) {
+                            for (String s : toRemove) {
+                                boardData.remove(s);
+                            }
+                            return possibleAmount;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("South")) {
+            for (int i = XCoordinate; i < boardSize + 1; i++) {
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if ((str.getKey().equals(i + " " + YCoordinate))) {
+                        if ((str.getValue() instanceof FoodPoint)) {
+                            possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                            toRemove.add(str.getKey());
+                        }
+
+                        if ((str.getValue() instanceof Insect) && !(((Insect) str.getValue()).color).equals(color)) {
+                            for (String s : toRemove) {
+                                boardData.remove(s);
+                            }
+                            return possibleAmount;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("East")) {
+            for (int i = YCoordinate; i < boardSize + 1; i++) {
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if ((str.getKey().equals(XCoordinate + " " + i))) {
+                        if ((str.getValue() instanceof FoodPoint)) {
+                            possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                            toRemove.add(str.getKey());
+                        }
+
+                        if ((str.getValue() instanceof Insect) && !(((Insect) str.getValue()).color).equals(color)) {
+                            for (String s : toRemove) {
+                                boardData.remove(s);
+                            }
+                            return possibleAmount;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("West")) {
+            for (int i = YCoordinate; i > 0; i--) {
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if ((str.getKey().equals(XCoordinate + " " + i))) {
+                        if ((str.getValue() instanceof FoodPoint)) {
+                            possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                            toRemove.add(str.getKey());
+                        }
+
+                        if ((str.getValue() instanceof Insect) && !(((Insect) str.getValue()).color).equals(color)) {
+                            for (String s : toRemove) {
+                                boardData.remove(s);
+                            }
+                            return possibleAmount;
+                        }
+                    }
+                }
+            }
+        }
+        for (String s : toRemove) {
+            boardData.remove(s);
+        }
+        return possibleAmount;
+    }
+
+    /**
+     * Gets the amount of possible points visible after going in the specified direction.
+     *
+     * @param dir            the direction in which the ant is attempting to go
+     * @param entityPosition the position of the entity(XCoordinate, YCoordinate)
+     * @param boardData      the map of the board
+     * @param boardSize      the size of the board(DxD)
+     * @return the amount of possible points after going
+     */
+    @Override
+    public int getDiagonalDirectionVisibleValue(Direction dir, EntityPosition entityPosition, Map<String, BoardEntity> boardData, int boardSize) {
+        int possibleAmount = 0;
+        int XCoordinate = Integer.parseInt(entityPosition.getPositionString().split(" ")[0]);
+        int YCoordinate = Integer.parseInt(entityPosition.getPositionString().split(" ")[1]);
+
+        if (dir.getTextRepresentation().equals("North-East")) {
+            while (XCoordinate > 1 && YCoordinate < boardSize) {
+                XCoordinate -= 1;
+                YCoordinate += 1;
+
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if (((str.getValue()) instanceof FoodPoint) && (str.getKey().equals(XCoordinate + " " + YCoordinate))) {
+                        possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("South-East")) {
+            while (XCoordinate < boardSize && YCoordinate < boardSize) {
+                XCoordinate += 1;
+                YCoordinate += 1;
+
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if (((str.getValue()) instanceof FoodPoint) && (str.getKey().equals(XCoordinate + " " + YCoordinate))) {
+                        possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("South-West")) {
+            while (XCoordinate < boardSize && YCoordinate > 1) {
+                XCoordinate += 1;
+                YCoordinate -= 1;
+
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if (((str.getValue()) instanceof FoodPoint) && (str.getKey().equals(XCoordinate + " " + YCoordinate))) {
+                        possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("North-West")) {
+            while (XCoordinate > 1 && YCoordinate > 1) {
+                XCoordinate -= 1;
+                YCoordinate -= 1;
+
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if (((str.getValue()) instanceof FoodPoint) && (str.getKey().equals(XCoordinate + " " + YCoordinate))) {
+                        possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                    }
+                }
+            }
+        }
+
+        return possibleAmount;
+    }
+
+    /**
+     * Attempts to travel in the specified direction after going, returns the amount of possible points and updates the desk.
+     *
+     * @param dir            the direction in which the ant should go
+     * @param entityPosition the position of the entity(XCoordinate, YCoordinate)
+     * @param color          the color of the ant
+     * @param boardData      the map of the board
+     * @param boardSize      the size of the board(DxD)
+     * @return the amount of possible points after traveling in the specified direction
+     */
+    @Override
+    public int travelDiagonally(Direction dir, EntityPosition entityPosition, InsectColor color, Map<String, BoardEntity> boardData, int boardSize) {
+        ArrayList<String> toRemove = new ArrayList<String>();
+        int possibleAmount = 0;
+        int XCoordinate = Integer.parseInt(entityPosition.getPositionString().split(" ")[0]);
+        int YCoordinate = Integer.parseInt(entityPosition.getPositionString().split(" ")[1]);
+        toRemove.add(XCoordinate + " " + YCoordinate);
+
+        if (dir.getTextRepresentation().equals("North-East")) {
+            while (XCoordinate > 1 && YCoordinate < boardSize) {
+                XCoordinate -= 1;
+                YCoordinate += 1;
+
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if ((str.getKey().equals(XCoordinate + " " + YCoordinate))) {
+                        if (((str.getValue()) instanceof FoodPoint)) {
+                            possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                            toRemove.add(str.getKey());
+                        }
+
+                        if (((str.getValue()) instanceof Insect) && !(((Insect) str.getValue()).color).equals(color)) {
+                            for (String s : toRemove) {
+                                boardData.remove(s);
+                            }
+                            return possibleAmount;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("South-East")) {
+            while (XCoordinate < boardSize && YCoordinate < boardSize) {
+                XCoordinate += 1;
+                YCoordinate += 1;
+
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if ((str.getKey().equals(XCoordinate + " " + YCoordinate))) {
+                        if (((str.getValue()) instanceof FoodPoint)) {
+                            possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                            toRemove.add(str.getKey());
+                        }
+
+                        if (((str.getValue()) instanceof Insect) && !(((Insect) str.getValue()).color).equals(color)) {
+                            for (String s : toRemove) {
+                                boardData.remove(s);
+                            }
+                            return possibleAmount;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("South-West")) {
+            while (XCoordinate < boardSize && YCoordinate > 1) {
+                XCoordinate += 1;
+                YCoordinate -= 1;
+
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if ((str.getKey().equals(XCoordinate + " " + YCoordinate))) {
+                        if (((str.getValue()) instanceof FoodPoint)) {
+                            possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                            toRemove.add(str.getKey());
+                        }
+
+                        if (((str.getValue()) instanceof Insect) && !(((Insect) str.getValue()).color).equals(color)) {
+                            for (String s : toRemove) {
+                                boardData.remove(s);
+                            }
+                            return possibleAmount;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("North-West")) {
+            while (XCoordinate > 1 && YCoordinate > 1) {
+                XCoordinate -= 1;
+                YCoordinate -= 1;
+
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if ((str.getKey().equals(XCoordinate + " " + YCoordinate))) {
+                        if (((str.getValue()) instanceof FoodPoint)) {
+                            possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                            toRemove.add(str.getKey());
+                        }
+
+                        if (((str.getValue()) instanceof Insect) && !(((Insect) str.getValue()).color).equals(color)) {
+                            for (String s : toRemove) {
+                                boardData.remove(s);
+                            }
+                            return possibleAmount;
+                        }
+                    }
+                }
+            }
+        }
+
+        for (String s : toRemove) {
+            boardData.remove(s);
+        }
+
+        return possibleAmount;
+    }
+}
+
+/**
+ * Represents a Butterfly insect on the game board.
+ */
+class Butterfly extends Insect implements OrthogonalMoving {
+    /**
+     * Constructs a Butterfly with the specified position and color.
+     *
+     * @param position the position of the butterfly on the board(XCoordinate, YCoordinate)
+     * @param color    the color of the butterfly
+     */
+    public Butterfly(EntityPosition position, InsectColor color) {
+        super(position, color);
+        this.position = position;
+        this.color = color;
+    }
+
+    /**
+     * Tries all possible directions where could fly a butterfly, counts the number of possible food points and returns the direction with the most food
+     *
+     * @param boardData the map of the board
+     * @param boardSize the size of the board(DxD)
+     * @return returns the direction with the most food
+     */
+    @Override
+    public Direction GetBestDirection(Map<String, BoardEntity> boardData, int boardSize) {
+        ArrayList<Direction> directions = new ArrayList<Direction>();
+        int maximumAmount = 0;
+        Direction maximumDirection = Direction.N;
+
+        directions.add(Direction.N);
+        directions.add(Direction.E);
+        directions.add(Direction.S);
+        directions.add(Direction.W);
+
+        for (int i = 0; i < 4; i++) {
+            int possibleAmount = getOrthogonalDirectionVisibleValue(directions.get(i), position, boardData, boardSize);
+            if (possibleAmount > maximumAmount) {
+                maximumAmount = possibleAmount;
+                maximumDirection = directions.get(i);
+            }
+        }
+        return maximumDirection;
+    }
+
+    /**
+     * Simulates a butterfly's travel, calculates how much food it can collect in the best direction and updates the board
+     *
+     * @param dir       the direction in which the butterfly should fly
+     * @param boardData the map of the board
+     * @param boardSize the size of the board(DxD)
+     * @return the amount of food points after traveling in the specified direction
+     */
+    @Override
+    public int TravelDirection(Direction dir, Map<String, BoardEntity> boardData, int boardSize) {
+        return travelOrthogonally(dir, position, color, boardData, boardSize);
+    }
+
+    /**
+     * Gets the amount of possible points visible after going in the specified direction.
+     *
+     * @param dir            the direction in which the butterfly is attempting to fly
+     * @param entityPosition the position of the entity(XCoordinate, YCoordinate)
+     * @param boardData      the map of the board
+     * @param boardSize      the size of the board(DxD)
+     * @return the amount of possible points after flying
+     */
+    @Override
+    public int getOrthogonalDirectionVisibleValue(Direction dir, EntityPosition entityPosition, Map<String, BoardEntity> boardData, int boardSize) {
+        int possibleAmount = 0;
+        int XCoordinate = Integer.parseInt(entityPosition.getPositionString().split(" ")[0]);
+        int YCoordinate = Integer.parseInt(entityPosition.getPositionString().split(" ")[1]);
+
+        if (dir.getTextRepresentation().equals("North")) {
+            for (int i = XCoordinate; i > 0; i--) {
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if ((str.getValue() instanceof FoodPoint) && (str.getKey().equals(i + " " + YCoordinate))) {
+                        possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("South")) {
+            for (int i = XCoordinate; i < boardSize + 1; i++) {
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if ((str.getValue() instanceof FoodPoint) && (str.getKey().equals(i + " " + YCoordinate))) {
+                        possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("East")) {
+            for (int i = YCoordinate; i < boardSize + 1; i++) {
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if ((str.getValue() instanceof FoodPoint) && (str.getKey().equals(XCoordinate + " " + i))) {
+                        possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("West")) {
+            for (int i = YCoordinate; i > 0; i--) {
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if ((str.getValue() instanceof FoodPoint) && (str.getKey().equals(XCoordinate + " " + i))) {
+                        possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                    }
+                }
+            }
+        }
+        return possibleAmount;
+    }
+
+    /**
+     * Attempts to travel in the specified direction after flying, returns the amount of possible points and updates the desk.
+     *
+     * @param dir            the direction in which the butterfly should fly
+     * @param entityPosition the position of the entity(XCoordinate, YCoordinate)
+     * @param color          the color of the butterfly
+     * @param boardData      the map of the board
+     * @param boardSize      the size of the board(DxD)
+     * @return the amount of possible points after traveling in the specified direction
+     */
+    @Override
+    public int travelOrthogonally(Direction dir, EntityPosition entityPosition, InsectColor color, Map<String, BoardEntity> boardData, int boardSize) {
+        ArrayList<String> toRemove = new ArrayList<String>();
+        int possibleAmount = 0;
+        int XCoordinate = Integer.parseInt(entityPosition.getPositionString().split(" ")[0]);
+        int YCoordinate = Integer.parseInt(entityPosition.getPositionString().split(" ")[1]);
+        toRemove.add(XCoordinate + " " + YCoordinate);
+
+        if (dir.getTextRepresentation().equals("North")) {
+            for (int i = XCoordinate; i > 0; i--) {
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if (str.getKey().equals(i + " " + YCoordinate)) {
+                        if ((str.getValue() instanceof FoodPoint)) {
+                            possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                            toRemove.add(str.getKey());
+                        }
+
+                        if ((str.getValue() instanceof Insect) && !(((Insect) str.getValue()).color).equals(color)) {
+                            for (String s : toRemove) {
+                                boardData.remove(s);
+                            }
+                            return possibleAmount;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("South")) {
+            for (int i = XCoordinate; i < boardSize + 1; i++) {
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if ((str.getKey().equals(i + " " + YCoordinate))) {
+                        if ((str.getValue() instanceof FoodPoint)) {
+                            possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                            toRemove.add(str.getKey());
+                        }
+
+                        if ((str.getValue() instanceof Insect) && !(((Insect) str.getValue()).color).equals(color)) {
+                            for (String s : toRemove) {
+                                boardData.remove(s);
+                            }
+                            return possibleAmount;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("East")) {
+            for (int i = YCoordinate; i < boardSize + 1; i++) {
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if ((str.getKey().equals(XCoordinate + " " + i))) {
+                        if ((str.getValue() instanceof FoodPoint)) {
+                            possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                            toRemove.add(str.getKey());
+                        }
+
+                        if ((str.getValue() instanceof Insect) && !(((Insect) str.getValue()).color).equals(color)) {
+                            for (String s : toRemove) {
+                                boardData.remove(s);
+                            }
+                            return possibleAmount;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("West")) {
+            for (int i = YCoordinate; i > 0; i--) {
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if ((str.getKey().equals(XCoordinate + " " + i))) {
+                        if ((str.getValue() instanceof FoodPoint)) {
+                            possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                            toRemove.add(str.getKey());
+                        }
+
+                        if ((str.getValue() instanceof Insect) && !(((Insect) str.getValue()).color).equals(color)) {
+                            for (String s : toRemove) {
+                                boardData.remove(s);
+                            }
+                            return possibleAmount;
+                        }
+                    }
+                }
+            }
+        }
+        for (String s : toRemove) {
+            boardData.remove(s);
+        }
+
+        return possibleAmount;
+    }
+}
+
+/**
+ * Represents a Spider insect on the game board.
+ */
+class Spider extends Insect implements DiagonalMoving {
+
+    /**
+     * Constructs a Spider with the specified position and color.
+     *
+     * @param position the position of the spider on the board(XCoordinate, YCoordinate)
+     * @param color    the color of the spider
+     */
+    public Spider(EntityPosition position, InsectColor color) {
+        super(position, color);
+        this.position = position;
+        this.color = color;
+    }
+
+    /**
+     * Tries all possible directions where could go a spider, counts the number of possible food points and returns the direction with the most food
+     *
+     * @param boardData the map of the board
+     * @param boardSize the size of the board(DxD)
+     * @return returns the direction with the most food
+     */
+    @Override
+    public Direction GetBestDirection(Map<String, BoardEntity> boardData, int boardSize) {
+        ArrayList<Direction> directions = new ArrayList<Direction>();
+        int maximumAmount = 0;
+        Direction maximumDirection = Direction.NE;
+
+        directions.add(Direction.NE);
+        directions.add(Direction.SE);
+        directions.add(Direction.SW);
+        directions.add(Direction.NW);
+
+        for (int i = 0; i < 4; i++) {
+            int possibleAmount = getDiagonalDirectionVisibleValue(directions.get(i), position, boardData, boardSize);
+            if (possibleAmount > maximumAmount) {
+                maximumAmount = possibleAmount;
+                maximumDirection = directions.get(i);
+            }
+        }
+
+        return maximumDirection;
+    }
+
+    /**
+     * Simulates a spider's travel, calculates how much food it can collect in the best direction and updates the board
+     *
+     * @param dir       the direction in which the spider should go
+     * @param boardData the map of the board
+     * @param boardSize the size of the board(DxD)
+     * @return the amount of food points after traveling in the specified direction
+     */
+    @Override
+    public int TravelDirection(Direction dir, Map<String, BoardEntity> boardData, int boardSize) {
+        return travelDiagonally(dir, position, color, boardData, boardSize);
+    }
+
+    /**
+     * Gets the amount of possible points visible after going in the specified direction.
+     *
+     * @param dir            the direction in which the spider is attempting to go
+     * @param entityPosition the position of the entity(XCoordinate, YCoordinate)
+     * @param boardData      the map of the board
+     * @param boardSize      the size of the board(DxD)
+     * @return the amount of possible points after going
+     */
+    @Override
+    public int getDiagonalDirectionVisibleValue(Direction dir, EntityPosition entityPosition, Map<String, BoardEntity> boardData, int boardSize) {
+        int possibleAmount = 0;
+        int XCoordinate = Integer.parseInt(entityPosition.getPositionString().split(" ")[0]);
+        int YCoordinate = Integer.parseInt(entityPosition.getPositionString().split(" ")[1]);
+
+        if (dir.getTextRepresentation().equals("North-East")) {
+            while (XCoordinate > 1 && YCoordinate < boardSize) {
+                XCoordinate -= 1;
+                YCoordinate += 1;
+
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if (((str.getValue()) instanceof FoodPoint) && (str.getKey().equals(XCoordinate + " " + YCoordinate))) {
+                        possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("South-East")) {
+            while (XCoordinate < boardSize && YCoordinate < boardSize) {
+                XCoordinate += 1;
+                YCoordinate += 1;
+
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if (((str.getValue()) instanceof FoodPoint) && (str.getKey().equals(XCoordinate + " " + YCoordinate))) {
+                        possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("South-West")) {
+            while (XCoordinate < boardSize && YCoordinate > 1) {
+                XCoordinate += 1;
+                YCoordinate -= 1;
+
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if (((str.getValue()) instanceof FoodPoint) && (str.getKey().equals(XCoordinate + " " + YCoordinate))) {
+                        possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("North-West")) {
+            while (XCoordinate > 1 && YCoordinate > 1) {
+                XCoordinate -= 1;
+                YCoordinate -= 1;
+
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if (((str.getValue()) instanceof FoodPoint) && (str.getKey().equals(XCoordinate + " " + YCoordinate))) {
+                        possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                    }
+                }
+            }
+        }
+
+        return possibleAmount;
+    }
+
+    /**
+     * Attempts to travel in the specified direction after going, returns the amount of possible points and updates the desk.
+     *
+     * @param dir            the direction in which the spider should jump
+     * @param entityPosition the position of the entity(XCoordinate, YCoordinate)
+     * @param color          the color of the spider
+     * @param boardData      the map of the board
+     * @param boardSize      the size of the board(DxD)
+     * @return the amount of possible points after traveling in the specified direction
+     */
+    @Override
+    public int travelDiagonally(Direction dir, EntityPosition entityPosition, InsectColor color, Map<String, BoardEntity> boardData, int boardSize) {
+        ArrayList<String> toRemove = new ArrayList<String>();
+        int possibleAmount = 0;
+        int XCoordinate = Integer.parseInt(entityPosition.getPositionString().split(" ")[0]);
+        int YCoordinate = Integer.parseInt(entityPosition.getPositionString().split(" ")[1]);
+        toRemove.add(XCoordinate + " " + YCoordinate);
+
+        if (dir.getTextRepresentation().equals("North-East")) {
+            while (XCoordinate > 1 && YCoordinate < boardSize) {
+                XCoordinate -= 1;
+                YCoordinate += 1;
+
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if ((str.getKey().equals(XCoordinate + " " + YCoordinate))) {
+                        if (((str.getValue()) instanceof FoodPoint)) {
+                            possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                            toRemove.add(str.getKey());
+                        }
+
+                        if (((str.getValue()) instanceof Insect) && !(((Insect) str.getValue()).color).equals(color)) {
+                            for (String s : toRemove) {
+                                boardData.remove(s);
+                            }
+                            return possibleAmount;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("South-East")) {
+            while (XCoordinate < boardSize && YCoordinate < boardSize) {
+                XCoordinate += 1;
+                YCoordinate += 1;
+
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if ((str.getKey().equals(XCoordinate + " " + YCoordinate))) {
+                        if (((str.getValue()) instanceof FoodPoint)) {
+                            possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                            toRemove.add(str.getKey());
+                        }
+
+                        if (((str.getValue()) instanceof Insect) && !(((Insect) str.getValue()).color).equals(color)) {
+                            for (String s : toRemove) {
+                                boardData.remove(s);
+                            }
+                            return possibleAmount;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("South-West")) {
+            while (XCoordinate < boardSize && YCoordinate > 1) {
+                XCoordinate += 1;
+                YCoordinate -= 1;
+
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if ((str.getKey().equals(XCoordinate + " " + YCoordinate))) {
+                        if (((str.getValue()) instanceof FoodPoint)) {
+                            possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                            toRemove.add(str.getKey());
+                        }
+
+                        if (((str.getValue()) instanceof Insect) && !(((Insect) str.getValue()).color).equals(color)) {
+                            for (String s : toRemove) {
+                                boardData.remove(s);
+                            }
+                            return possibleAmount;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("North-West")) {
+            while (XCoordinate > 1 && YCoordinate > 1) {
+                XCoordinate -= 1;
+                YCoordinate -= 1;
+
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if ((str.getKey().equals(XCoordinate + " " + YCoordinate))) {
+                        if (((str.getValue()) instanceof FoodPoint)) {
+                            possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                            toRemove.add(str.getKey());
+                        }
+
+                        if (((str.getValue()) instanceof Insect) && !(((Insect) str.getValue()).color).equals(color)) {
+                            for (String s : toRemove) {
+                                boardData.remove(s);
+                            }
+                            return possibleAmount;
+                        }
+                    }
+                }
+            }
+        }
+        for (String s : toRemove) {
+            boardData.remove(s);
+        }
+
+        return possibleAmount;
+    }
+}
+
+/**
+ * Represents a Grasshopper insect on the game board.
+ */
+class Grasshopper extends Insect {
+
+    /**
+     * Constructs a Grasshopper with the specified position and color.
+     *
+     * @param position the position of the grasshopper on the board(XCoordinate, YCoordinate)
+     * @param color    the color of the grasshopper
+     */
+    public Grasshopper(EntityPosition position, InsectColor color) {
+        super(position, color);
+        this.position = position;
+        this.color = color;
+    }
+
+    /**
+     * Gets the amount of possible points visible after jumping in the specified direction.
+     *
+     * @param dir            the direction in which the grasshopper is attempting to jump
+     * @param entityPosition the position of the entity(XCoordinate, YCoordinate)
+     * @param boardData      the map of the board
+     * @param boardSize      the size of the board(DxD)
+     * @return the amount of possible points after jumping
+     */
+    public int getJumpedDirectionVisibleValue(Direction dir, EntityPosition entityPosition, Map<String, BoardEntity> boardData, int boardSize) {
+        int possibleAmount = 0;
+        int XCoordinate = Integer.parseInt(entityPosition.getPositionString().split(" ")[0]);
+        int YCoordinate = Integer.parseInt(entityPosition.getPositionString().split(" ")[1]);
+
+        if (dir.getTextRepresentation().equals("North")) {
+            while (XCoordinate > 2) {
+                XCoordinate -= 2;
+
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if (str.getKey().equals(XCoordinate + " " + YCoordinate)) {
+                        if ((str.getValue()) instanceof FoodPoint) {
+                            possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                        }
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("South")) {
+            while (XCoordinate < (boardSize - 1)) {
+                XCoordinate += 2;
+
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if (str.getKey().equals(XCoordinate + " " + YCoordinate)) {
+                        if ((str.getValue()) instanceof FoodPoint) {
+                            possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                        }
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("East")) {
+            while (YCoordinate < boardSize - 1) {
+                YCoordinate += 2;
+
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if (str.getKey().equals(XCoordinate + " " + YCoordinate)) {
+                        if ((str.getValue()) instanceof FoodPoint) {
+                            possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                        }
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("West")) {
+            while (YCoordinate > 2) {
+                YCoordinate -= 2;
+
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if (str.getKey().equals(XCoordinate + " " + YCoordinate)) {
+                        if ((str.getValue()) instanceof FoodPoint) {
+                            possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                        }
+                    }
+                }
+            }
+        }
+        return possibleAmount;
+    }
+
+    /**
+     * Attempts to travel in the specified direction after jumping, returns the amount of possible points and updates the desk.
+     *
+     * @param dir            the direction in which the grasshopper should jump
+     * @param entityPosition the position of the entity(XCoordinate, YCoordinate)
+     * @param color          the color of the grasshopper
+     * @param boardData      the map of the board
+     * @param boardSize      the size of the board(DxD)
+     * @return the amount of possible points after traveling in the specified direction
+     */
+    public int travelJumped(Direction dir, EntityPosition entityPosition, InsectColor color, Map<String, BoardEntity> boardData, int boardSize) {
+        ArrayList<String> toRemove = new ArrayList<String>();
+        int possibleAmount = 0;
+        int XCoordinate = Integer.parseInt(entityPosition.getPositionString().split(" ")[0]);
+        int YCoordinate = Integer.parseInt(entityPosition.getPositionString().split(" ")[1]);
+        toRemove.add(XCoordinate + " " + YCoordinate);
+
+        if (dir.getTextRepresentation().equals("North")) {
+            while (XCoordinate > 2) {
+                XCoordinate -= 2;
+
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if (str.getKey().equals(XCoordinate + " " + YCoordinate)) {
+                        if ((str.getValue()) instanceof FoodPoint) {
+                            possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                            toRemove.add(str.getKey());
+                        }
+
+                        if ((str.getValue() instanceof Insect) && !(((Insect) str.getValue()).color).equals(color)) {
+                            for (String s : toRemove) {
+                                boardData.remove(s);
+                            }
+                            return possibleAmount;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("South")) {
+            while (XCoordinate < (boardSize - 1)) {
+                XCoordinate += 2;
+
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if (str.getKey().equals(XCoordinate + " " + YCoordinate)) {
+                        if ((str.getValue()) instanceof FoodPoint) {
+                            possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                            toRemove.add(str.getKey());
+                        }
+
+                        if ((str.getValue() instanceof Insect) && !(((Insect) str.getValue()).color).equals(color)) {
+                            for (String s : toRemove) {
+                                boardData.remove(s);
+                            }
+                            return possibleAmount;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("East")) {
+            while (YCoordinate < boardSize - 1) {
+                YCoordinate += 2;
+
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if (str.getKey().equals(XCoordinate + " " + YCoordinate)) {
+                        if ((str.getValue()) instanceof FoodPoint) {
+                            possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                            toRemove.add(str.getKey());
+                        }
+
+                        if ((str.getValue() instanceof Insect) && !(((Insect) str.getValue()).color).equals(color)) {
+                            for (String s : toRemove) {
+                                boardData.remove(s);
+                            }
+                            return possibleAmount;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (dir.getTextRepresentation().equals("West")) {
+            while (YCoordinate > 2) {
+                YCoordinate -= 2;
+
+                for (Map.Entry<String, BoardEntity> str : boardData.entrySet()) {
+                    if (str.getKey().equals(XCoordinate + " " + YCoordinate)) {
+                        if ((str.getValue()) instanceof FoodPoint) {
+                            possibleAmount += ((FoodPoint) str.getValue()).getValue();
+                            toRemove.add(str.getKey());
+                        }
+
+                        if ((str.getValue() instanceof Insect) && !(((Insect) str.getValue()).color).equals(color)) {
+                            for (String s : toRemove) {
+                                boardData.remove(s);
+                            }
+                            return possibleAmount;
+                        }
+                    }
+                }
+            }
+        }
+        for (String s : toRemove) {
+            boardData.remove(s);
+        }
+        return possibleAmount;
+    }
+
+    /**
+     * Tries all possible directions where could jump grasshopper, counts the number of possible food points and returns the direction with the most food
+     *
+     * @param boardData the map of the board
+     * @param boardSize the size of the board(DxD)
+     * @return returns the direction with the most food
+     */
+    @Override
+    public Direction GetBestDirection(Map<String, BoardEntity> boardData, int boardSize) {
+        ArrayList<Direction> directions = new ArrayList<Direction>();
+        int maximumAmount = 0;
+        Direction maximumDirection = Direction.N;
+
+        directions.add(Direction.N);
+        directions.add(Direction.E);
+        directions.add(Direction.S);
+        directions.add(Direction.W);
+        for (int i = 0; i < 4; i++) {
+            int possibleAmount = getJumpedDirectionVisibleValue(directions.get(i), position, boardData, boardSize);
+            if (possibleAmount > maximumAmount) {
+                maximumAmount = possibleAmount;
+                maximumDirection = directions.get(i);
+            }
+        }
+
+        return maximumDirection;
+    }
+
+    /**
+     * Simulates a grasshopper's travel, calculates how much food it can collect in the best direction and updates the board
+     *
+     * @param dir       the direction in which the grasshopper should jump
+     * @param boardData the map of the board
+     * @param boardSize the size of the board(DxD)
+     * @return the amount of food points after traveling in the specified direction
+     */
+    @Override
+    public int TravelDirection(Direction dir, Map<String, BoardEntity> boardData, int boardSize) {
+        return travelJumped(dir, position, color, boardData, boardSize);
+    }
+
+}
+
+/**
+ * Interface for entities that can move orthogonally on the game board.
+ */
+interface OrthogonalMoving {
+    /**
+     * Gets the visible value in the orthogonal direction.
+     *
+     * @param dir            the direction of movement
+     * @param entityPosition the position of the entity(XCoordinate, YCoordinate)
+     * @param boardData      the map of board entities
+     * @param boardSize      the size of the game board(DxD)
+     * @return the visible value in the specified orthogonal direction
+     */
+    int getOrthogonalDirectionVisibleValue(Direction dir, EntityPosition entityPosition, Map<String, BoardEntity> boardData, int boardSize);
+
+    /**
+     * Travels orthogonally in the specified direction.(simulates insect travel orthogonally)
+     *
+     * @param dir            the direction of movement
+     * @param entityPosition the position of the entity(XCoordinate, YCoordinate)
+     * @param color          the color of the insect
+     * @param boardData      the map of board entities
+     * @param boardSize      the size of the game board(DxD)
+     * @return the result of traveling orthogonally in the specified direction
+     */
+    int travelOrthogonally(Direction dir, EntityPosition entityPosition, InsectColor color, Map<String, BoardEntity> boardData, int boardSize);
+}
+
+/**
+ * Interface for entities that can move diagonaly on the game board.
+ */
+interface DiagonalMoving {
+    /**
+     * Gets the visible value in the diagonal direction.
+     *
+     * @param dir            the direction of movement
+     * @param entityPosition the position of the entity(XCoordinate, YCoordinate)
+     * @param boardData      the map of board entities
+     * @param boardSize      the size of the game board(DxD)
+     * @return the visible value in the specified diagonal direction
+     */
+    int getDiagonalDirectionVisibleValue(Direction dir, EntityPosition entityPosition, Map<String, BoardEntity> boardData, int boardSize);
+
+    /**
+     * Gets the visible value in the diagonal direction.
+     *
+     * @param dir            the direction of movement
+     * @param entityPosition the position of the entity(XCoordinate, YCoordinate)
+     * @param boardData      the map of board entities
+     * @param boardSize      the size of the game board(DxD)
+     * @return the visible value in the specified diagonal direction
+     */
+    int travelDiagonally(Direction dir, EntityPosition entityPosition, InsectColor color, Map<String, BoardEntity> boardData, int boardSize);
+}
+
+/**
+ * Enum representing the colors of insects.
+ */
+enum InsectColor {
+    RED, GREEN, BLUE, YELLOW;
+
+    /**
+     * Converts a string to the corresponding InsectColor enum value.
+     *
+     * @param s the string representing the color
+     * @return the InsectColor enum value corresponding to the string, or null if the string does not match any color
+     */
+    public static InsectColor toColor(String s) {
+        String red = "Red";
+        String green = "Green";
+        String blue = "Blue";
+        String yellow = "Yellow";
+        if (s.equals(red)) {
+            return InsectColor.RED;
+        }
+        if (s.equals(green)) {
+            return InsectColor.GREEN;
+        }
+        if (s.equals(blue)) {
+            return InsectColor.BLUE;
+        }
+        if (s.equals(yellow)) {
+            return InsectColor.YELLOW;
+        }
+        return null;
+    }
+}
+
+/**
+ * Enum represents cardinal and intercardinal directions.
+ */
+enum Direction {
+    N("North"), E("East"), S("South"), W("West"), NE("North-East"), SE("South-East"), SW("South-West"), NW("North-West");
+    private String textRepresentation;
+
+    /**
+     * Constructor for Direction enum.
+     *
+     * @param textRepresentation the text representation of the direction
+     */
+    Direction(String textRepresentation) {
+        this.textRepresentation = textRepresentation;
+    }
+
+    /**
+     * Get the text representation of the direction.
+     *
+     * @return the text representation of the direction
+     */
+    public String getTextRepresentation() {
+        return textRepresentation;
+    }
+}
+
+/**
+ * Represents custom Exception class for handling Insects game validation errors.
+ */
+class Exception {
+
+    /**
+     * Constructs a new Exceptoion.
+     */
+    public Exception() {
+    }
+
+    /**
+     * Gets the error message based on game validation parameters.
+     *
+     * @param boardSize       the size of the game board
+     * @param numberOfInsects the number of insects on the board
+     * @param numberOfFood    the number of food points on the board
+     * @param boardData       the map containing the board entities and their positions
+     * @return the error message if validation fails, or "Correct" if validation passes
+     */
+
+    public String getMessage(int boardSize, int numberOfInsects, int numberOfFood, Map<String, BoardEntity> boardData) {
+        if (boardSize < 4 || boardSize > 1000) {
+            return "Invalid board size\n";
+        }
+        if (numberOfInsects < 1 || numberOfInsects > 16) {
+            return "Invalid number of insects\n";
+        }
+        if (numberOfFood < 1 || numberOfFood > 200) {
+            return "Invalid number of food points\n";
+        }
+        for (Map.Entry<String, BoardEntity> strOne : boardData.entrySet()) {
+            int XCoordinate = Integer.parseInt(strOne.getKey().split(" ")[0]);
+            int YCoordinate = Integer.parseInt(strOne.getKey().split(" ")[1]);
+            if (XCoordinate < 1 || XCoordinate > boardSize || YCoordinate < 1 || YCoordinate > boardSize) {
+                return "Invalid entity position\n";
+            }
+            for (Map.Entry<String, BoardEntity> strTwo : boardData.entrySet()) {
+                if ((strOne.getKey()).equals(strTwo.getKey()) && !((strOne.getValue()).equals(strTwo.getValue()))) {
+                    System.out.println(strOne.getKey() + " " + strTwo.getKey());
+                    return "Two entities in the same position\n";
+                }
+                if ((strOne.getValue()) instanceof Insect && (strTwo.getValue()) instanceof Insect) {
+                    if ((((Insect) strOne.getValue()).color).equals(((Insect) strTwo.getValue()).color)) {
+                        if ((((Insect) strOne.getValue()).getClass().getSimpleName()).equals(((Insect) strTwo.getValue()).getClass().getSimpleName())) {
+                            if (!(((Insect) strOne.getValue()).getClass()).equals((((Insect) strTwo.getValue()).getClass()))) {
+                                return "Duplicate insects" + strOne.getValue() + " " + strTwo.getValue();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return "Correct";
+    }
+}
