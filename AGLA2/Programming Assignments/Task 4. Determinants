@@ -285,11 +285,11 @@ public:
 class EliminationMatrix: public SquareMatrix
 {
 public:
-    EliminationMatrix(SquareMatrix &other, int n)
+    EliminationMatrix(SquareMatrix &other, int n, int i, int j)
         : SquareMatrix(n)
     {
         IdentityMatrix I(n);
-        I.info[1][0] = -(other.info[1][0] / other.info[0][0]);
+        I.info[i - 1][j - 1] = -(other.info[i - 1][j - 1] / other.info[i - 2][j - 1]);
 
         info = I.info;
     }
@@ -298,18 +298,19 @@ public:
 class PermutationMatrix: public SquareMatrix
 {
 public:
-    explicit PermutationMatrix(int n)
+    explicit PermutationMatrix(int n, int i, int j)
         : SquareMatrix(n)
     {
         IdentityMatrix I(n);
-        I.info[0][0] = 0;
-        I.info[1][1] = 0;
-        I.info[0][1] = 1;
-        I.info[1][0] = 1;
+        I.info[i - 1][i - 1] = 0;
+        I.info[j - 1][j - 1] = 0;
+        I.info[j - 1][i - 1] = 1;
+        I.info[i - 1][j - 1] = 1;
 
         info = I.info;
     }
 };
+
 
 int main()
 {
