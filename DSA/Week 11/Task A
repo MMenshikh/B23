@@ -1,0 +1,168 @@
+// Java language
+
+// Maksim Menshikh
+
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        int n = scanner.nextInt();
+
+        boolean flag = true;
+
+        ArrayList<ArrayList<Integer>> adjacencyMatrix = new ArrayList<>();
+
+        for (int i = 0; i < n; i++) {
+            ArrayList<Integer> iList = new ArrayList<>();
+            for (int j = 0; j < n; j++) {
+                iList.add(scanner.nextInt());
+            }
+            adjacencyMatrix.add(iList);
+        }
+
+        Graph<Integer, Integer> graph = new Graph<>();
+
+        for (int i = 0; i < n; i++) {
+            graph.addVertex(i);
+        }
+
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (adjacencyMatrix.get(i).get(j) == 1) {
+                    graph.addEdge(graph.vertices.get(i), graph.vertices.get(j), 1);
+                }
+            }
+        }
+
+        for (int i = 0; i < n; i++) {
+            if (!graph.MaksimMenshikh_dfs(graph.vertices.get(i))) {
+                flag = false;
+                break;
+            }
+        }
+
+        if (flag) {
+            System.out.println("YES");
+        } else {
+            System.out.println("NO");
+        }
+    }
+}
+
+//* This part of the code, except for the implementation of the MaksimMenshikh_dfs()
+// and MaksimMenshikh_dfsHelper() methods, was taken from Alaa Aldin Hajjar's lab for the 10th Week. *//
+class Graph<V, E> {
+    class Vertex {
+        V value;
+        List<Edge> inAdjacent;
+        List<Edge> outAdjacent;
+
+        int inDegree;
+        int outDegree;
+
+        public Vertex(V value) {
+            this.value = value;
+            this.inAdjacent = new LinkedList<>();
+            this.outAdjacent = new LinkedList<>();
+            this.inDegree = 0;
+            this.outDegree = 0;
+        }
+    }
+
+    class Edge {
+        Vertex from;
+        Vertex to;
+        E label;
+
+        public Edge(Vertex from, Vertex to, E label) {
+            this.from = from;
+            this.to = to;
+            this.label = label;
+        }
+    }
+
+    List<Vertex> vertices;
+    List<Edge> edges;
+
+    public Graph() {
+        this.vertices = new ArrayList<>();
+        this.edges = new ArrayList<>();
+    }
+
+    Vertex addVertex(V value) {
+        Vertex vertex = new Vertex(value);
+        this.vertices.add(vertex);
+        return vertex;
+    }
+
+    Edge addEdge(Vertex from, Vertex to, E label) {
+        Edge edge = new Edge(from, to, label);
+        this.edges.add(edge);
+        from.outAdjacent.add(edge);
+        to.inAdjacent.add(edge);
+        from.outDegree++;
+        to.inDegree++;
+        return edge;
+    }
+
+    boolean adjacent(Vertex from, Vertex to) {
+        for (Edge edge : from.outAdjacent) {
+            if (edge.to.equals(to)) {
+                return true;
+            }
+        }
+
+        for (Edge edge : to.outAdjacent) {
+            if (edge.to.equals(from)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    void removeEdge(Edge edge) {
+        edge.from.outDegree--;
+        edge.to.inDegree--;
+        edge.from.outAdjacent.remove(edge);
+        edge.to.inAdjacent.remove(edge);
+        this.edges.remove(edge);
+    }
+
+    void removeVertex(Vertex x) {
+        for (Edge edge : x.outAdjacent) {
+            removeEdge(edge);
+        }
+
+        for (Edge edge : x.inAdjacent) {
+            removeEdge(edge);
+        }
+
+        this.vertices.remove(x);
+    }
+
+    boolean MaksimMenshikh_dfs(Vertex from) {
+        Set<Vertex> visited = new HashSet<>();
+
+        MaksimMenshikh_dfsHelper(from, visited);
+
+        if (visited.size() == vertices.size()) {
+            return true;
+        }
+        return false;
+    }
+
+    private void MaksimMenshikh_dfsHelper(Vertex vertex, Set<Vertex> visited) {
+        visited.add(vertex);
+
+        for (Edge edge : vertex.outAdjacent) {
+            Vertex near = edge.to;
+
+            if (!visited.contains(near)) {
+                MaksimMenshikh_dfsHelper(near, visited);
+            }
+        }
+    }
+}
