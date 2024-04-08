@@ -1,0 +1,1412 @@
+// C++ language
+
+#include <iostream>
+#include <map>
+#include <vector>
+#include <algorithm>
+#include <fstream>
+#include <sstream>
+
+using namespace std;
+
+class PhysicalItem;
+class Character
+{
+    friend class PhysicalItem;
+public:
+    int healthPoints;
+    string name;
+
+    void takeDamage(int damage)
+    {
+        this->healthPoints -= damage;
+    }
+
+    void heal(int healValue)
+    {
+        this->healthPoints += healValue;
+    }
+
+    void die()
+    {
+        this->healthPoints = 0;
+
+    }
+public:
+    Character(int healthPoints, string name)
+        : healthPoints(healthPoints), name(name)
+    {}
+
+    string getName()
+    { return name; };
+
+    int getHP()
+    { return healthPoints; }
+
+protected:
+    void obtainItemSideEffect(PhysicalItem &item)
+    {}
+
+    void loseItemSideEffect(PhysicalItem &item)
+    {}
+
+    virtual void print(ostream os)
+    {}
+};
+
+class PhysicalItem
+{
+    friend class Character;
+private:
+    bool isUsableOnce;
+    Character *owner;
+    string name;
+public:
+    string getName()
+    { return name; }
+protected:
+    Character getOwner()
+    { return *owner; }
+
+    void giveDamageTo(Character to, int damage)
+    {
+        to.takeDamage(damage);
+    }
+
+    void giveHealTo(Character to, int heal)
+    {
+        to.heal(heal);
+    }
+
+    void afterUse()
+    {}
+
+    virtual void useLogic(Character user, Character target)
+    {}
+
+    virtual void print(ostream os)
+    {}
+};
+
+class Weapon: public PhysicalItem
+{
+private:
+    int damage;
+public:
+    Weapon(int damageValue)
+        : damage(damageValue)
+    {}
+
+    int getDamage()
+    { return damage; }
+
+    void useLogic(Character user, Character target)
+    {
+        giveDamageTo(target, this->getDamage());
+    }
+protected:
+    void print(ostream os)
+    {}
+};
+
+class Potion: public PhysicalItem
+{
+private:
+    int healValue;
+public:
+    Potion(int healValue)
+        : healValue(healValue)
+    {}
+
+    int getHealValue()
+    { return healValue; }
+
+    void useLogic(Character user, Character target)
+    {
+        giveHealTo(target, this->healValue);
+    }
+protected:
+    void print(ostream os)
+    {}
+};
+
+class Spell: public PhysicalItem
+{
+private:
+    vector<string> allowedTargets;
+
+    void useLogic(Character user, Character target)
+    {
+        giveDamageTo(target, target.getHP());
+    }
+public:
+    Spell(vector<string> allowedTargets)
+        : allowedTargets(allowedTargets)
+    {}
+
+    vector<string> getAllowedTargets()
+    { return allowedTargets; }
+protected:
+    void print(ostream os)
+    {}
+};
+
+template<typename T>
+class Container
+{
+};
+
+template<>
+class Container<PhysicalItem>
+{
+private:
+    map<string, PhysicalItem> elements;
+public:
+    void addItem(PhysicalItem newItem)
+    { elements.emplace(newItem.getName(), newItem); }
+
+    void removeItem(PhysicalItem newItem)
+    { elements.erase(newItem.getName()); }
+
+    bool find(PhysicalItem item)
+    { return elements.find(item.getName()) != elements.end(); }
+
+    void removeItem(string itemName)
+    { elements.erase(itemName); }
+};
+
+class Arsenal: public Container<Weapon>
+{
+public:
+    void addNewItem(Weapon weapon)
+    { elements.emplace(weapon.getName(), weapon); }
+
+    void removeNewItem(Weapon weapon)
+    { elements.erase(weapon.getName()); }
+
+    map<string, Weapon> show()
+    { return elements; }
+
+    void destroyArsenal()
+    {
+        elements.clear();
+    }
+    map<string, Weapon> elements;
+};
+
+class MedicalBag: public Container<Potion>
+{
+public:
+    void addNewItem(Potion potion)
+    { elements.emplace(potion.getName(), potion); }
+
+    void removeNewItem(Potion potion)
+    { elements.erase(potion.getName()); }
+
+    map<string, Potion> show()
+    { return elements; }
+
+    void destroyMedicalBag()
+    {
+        elements.clear();
+    }
+    map<string, Potion> elements;
+};
+
+class SpellBook: public Container<Spell>
+{
+public:
+    map<string, Spell> elements;
+public:
+    void addNewItem(Spell spell)
+    { elements.emplace(spell.getName(), spell); }
+
+    void removeNewItem(Spell spell)
+    { elements.erase(spell.getName()); }
+
+    map<string, Spell> show()
+    { return elements; }
+
+    void destroySpellBook()
+    {
+        elements.clear();
+    }
+};
+
+class WeaponUser: public Character
+{
+public:
+    Arsenal arsenal;
+
+    WeaponUser(int healthPoints, string name)
+        : Character(healthPoints, name)
+    {}
+
+    map<string, Weapon> showWeapons()
+    { return arsenal.show(); }
+};
+
+class PotionUser: public Character
+{
+public:
+    MedicalBag medicalBag;
+
+    PotionUser(int healthPoints, string name)
+        : Character(healthPoints, name)
+    {}
+
+    void drink(Character target, string potionName)
+    {}
+
+    map<string, Potion> showPotions()
+    { return medicalBag.show(); }
+};
+
+class SpellUser: public Character
+{
+public:
+    SpellBook spellBook;
+
+    SpellUser(int healthPoints, string name)
+        : Character(healthPoints, name)
+    {}
+
+    void cast(Character target, string spellName)
+    {}
+
+    map<string, Spell> showSpells()
+    { return spellBook.show(); }
+};
+
+class Fighter: public WeaponUser, public PotionUser
+{
+public:
+    int maxAllowedWeapons = 3;
+    int maxAllowedPotions = 5;
+
+    Fighter(int healthPoints, string name)
+        : WeaponUser(healthPoints, name), PotionUser(healthPoints, name)
+    {}
+
+public:
+    void print(ostream os) override
+    {}
+};
+
+class Archer: public WeaponUser, public PotionUser, public SpellUser
+{
+public:
+    Archer(int healthPoints, string name)
+        : WeaponUser(healthPoints, name), PotionUser(healthPoints, name), SpellUser(healthPoints, name)
+    {}
+    int maxAllowedWeapons = 2;
+    int maxAllowedPotions = 3;
+    int maxAllowedSpells = 2;
+private:
+    void print(ostream os)
+    {}
+};
+
+class Wizard: public PotionUser, public SpellUser
+{
+public:
+    Wizard(int healthPoints, string name)
+        : PotionUser(healthPoints, name), SpellUser(healthPoints, name)
+    {}
+    int maxAllowedPotions = 10;
+    int maxAllowedSpells = 10;
+private:
+    void print(ostream os)
+    {}
+};
+
+class Narrator
+{
+private:
+    static Narrator *instance;
+    Narrator()
+    {}
+public:
+    static Narrator *getInstance()
+    {
+        if (instance == nullptr) {
+            instance = new Narrator();
+        }
+        return instance;
+    }
+
+    string speak(vector<string> event)
+    {
+        string speech = "Narrator: ";
+
+        for (int i = 3; i < stoi(event[2]) + 3; i++) {
+            speech += event[i] + " ";
+        }
+
+        speech += "\n";
+
+        return speech;
+    }
+};
+
+Narrator *Narrator::instance = nullptr;
+
+int main()
+{
+    ifstream fin;
+    fin.open("input.txt");
+
+    ofstream fout;
+    fout.open("output.txt");
+
+    string line;
+
+    getline(fin, line);
+    int n = stoi(line);
+
+    Narrator *narrator = Narrator::getInstance();
+
+    map<string, Fighter> existingFighters;
+    map<string, Archer> existingArchers;
+    map<string, Wizard> existingWizards;
+
+
+    for (int _ = 0; _ < n; _++) {
+        line = "";
+        getline(fin, line);
+
+        istringstream iss(line);
+        vector<string> event = {};
+        string word;
+        while (iss >> word) {
+            event.push_back(word);
+        }
+
+        if (event[0] == "Dialogue") {
+            string speaker = event[1];
+
+            if (speaker == "Narrator") {
+                string speech = narrator->speak(event);
+                fout << speech;
+            }
+            else if (existingFighters.find(speaker) != existingFighters.end()
+                || existingArchers.find(speaker) != existingArchers.end()
+                || existingWizards.find(speaker) != existingWizards.end()) {
+
+                if (existingFighters.find(speaker) != existingFighters.end()) {
+                    Fighter *fighterPtr = &existingFighters.find(speaker)->second;
+
+                    if (fighterPtr->WeaponUser::getHP() <= 0) {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+                }
+                else if (existingArchers.find(speaker) != existingArchers.end()) {
+                    Archer *archerPtr = &existingArchers.find(speaker)->second;
+
+                    if (archerPtr->PotionUser::getHP() <= 0) {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+                }
+                else if (existingWizards.find(speaker) != existingWizards.end()) {
+                    Wizard *wizardPtr = &existingWizards.find(speaker)->second;
+
+                    if (wizardPtr->SpellUser::getHP() <= 0) {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+                }
+
+                fout << speaker + ": ";
+
+                for (int i = 3; i < stoi(event[2]) + 3; i++) {
+                    fout << event[i] + " ";
+                }
+                fout << "\n";
+            }
+            else {
+                fout << "Error caught\n";
+                continue;
+            }
+        }
+
+        if (event[0] == "Create") {
+            string object = event[1];
+
+            if (object == "character") {
+                string typeOfCharacter = event[2];
+                string nameOfCharacter = event[3];
+                int healthPoints = stoi(event[4]);
+
+                if (typeOfCharacter == "fighter") {
+                    Fighter *fighter = new Fighter(healthPoints, nameOfCharacter);
+
+                    existingFighters.emplace(nameOfCharacter, *fighter);
+                }
+
+                if (typeOfCharacter == "archer") {
+                    Archer *archer = new Archer(healthPoints, nameOfCharacter);
+
+                    existingArchers.emplace(nameOfCharacter, *archer);
+                }
+
+                if (typeOfCharacter == "wizard") {
+                    Wizard *wizard = new Wizard(healthPoints, nameOfCharacter);
+
+                    existingWizards.emplace(nameOfCharacter, *wizard);
+                }
+
+                fout << "A new " + typeOfCharacter + " came to town, " + nameOfCharacter + ".\n";
+            }
+            if (object == "item") {
+                string typeOfItem = event[2];
+                string ownerName = event[3];
+                string itemName = event[4];
+
+                if (typeOfItem == "weapon") {
+                    string weaponName = itemName;
+                    int damageValue = stoi(event[5]);
+
+                    if (damageValue <= 0) {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+                    else {
+                        Weapon *weapon = new Weapon(damageValue);
+
+                        auto fighterIt = existingFighters.find(ownerName);
+                        auto archerIt = existingArchers.find(ownerName);
+
+                        if (fighterIt != existingFighters.end()) {
+                            Fighter *fighterPtr = &fighterIt->second;
+
+                            int fullness = fighterPtr->arsenal.elements.size();
+
+                            if (fullness == 3 || fighterPtr->WeaponUser::getHP() <= 0) {
+                                fout << "Error caught\n";
+                                continue;
+                            }
+                            else {
+                                fighterPtr->arsenal.elements.emplace(weaponName, *weapon);
+                                fout
+                                    << ownerName + " just obtained a new " + typeOfItem + " called " + itemName + ".\n";
+                            }
+                        }
+                        else if (archerIt != existingArchers.end()) {
+                            Archer *archerPtr = &archerIt->second;
+
+                            int fullness = archerPtr->arsenal.elements.size();
+
+                            if (fullness == 2 || archerPtr->PotionUser::getHP() <= 0) {
+                                fout << "Error caught\n";
+                                continue;
+                            }
+                            else {
+                                archerPtr->arsenal.elements.emplace(weaponName, *weapon);
+                                fout
+                                    << ownerName + " just obtained a new " + typeOfItem + " called " + itemName + ".\n";
+                            }
+                        }
+                        else {
+                            fout << "Error caught\n";
+                            continue;
+                        }
+                    }
+                }
+                if (typeOfItem == "potion") {
+                    string potionName = itemName;
+                    int healValue = stoi(event[5]);
+
+                    if (healValue <= 0) {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+                    else {
+
+                        Potion *potion = new Potion(healValue);
+
+                        auto fighterIt = existingFighters.find(ownerName);
+                        auto archerIt = existingArchers.find(ownerName);
+                        auto wizardIt = existingWizards.find(ownerName);
+
+                        if (fighterIt != existingFighters.end()) {
+                            Fighter *fighterPtr = &fighterIt->second;
+
+                            int fullness = fighterPtr->medicalBag.elements.size();
+
+                            if (fullness == 5 || fighterPtr->WeaponUser::getHP() <= 0) {
+                                fout << "Error caught\n";
+                                continue;
+                            }
+                            else {
+                                fighterPtr->medicalBag.elements.emplace(potionName, *potion);
+                                fout
+                                    << ownerName + " just obtained a new " + typeOfItem + " called " + itemName + ".\n";
+                            }
+                        }
+                        else if (archerIt != existingArchers.end()) {
+                            Archer *archerPtr = &archerIt->second;
+
+                            int fullness = archerPtr->medicalBag.elements.size();
+
+                            if (fullness == 3 || archerPtr->PotionUser::getHP() <= 0) {
+                                fout << "Error caught\n";
+                                continue;
+                            }
+                            else {
+                                archerPtr->medicalBag.elements.emplace(potionName, *potion);
+                                fout
+                                    << ownerName + " just obtained a new " + typeOfItem + " called " + itemName + ".\n";
+                            }
+                        }
+                        else if (wizardIt != existingWizards.end()) {
+                            Wizard *wizardPtr = &wizardIt->second;
+
+                            int fullness = wizardPtr->medicalBag.elements.size();
+
+                            if (fullness == 10 || wizardPtr->SpellUser::getHP() <= 0) {
+                                fout << "Error caught\n";
+                                continue;
+                            }
+                            else {
+                                wizardPtr->medicalBag.elements.emplace(potionName, *potion);
+                                fout
+                                    << ownerName + " just obtained a new " + typeOfItem + " called " + itemName + ".\n";
+                            }
+                        }
+                        else {
+                            fout << "Error caught\n";
+                            continue;
+                        }
+                    }
+                }
+                if (typeOfItem == "spell") {
+                    string spellName = itemName;
+                    int m = stoi(event[5]);
+
+                    vector<string> allowedTargets;
+                    bool flag = false;
+                    for (int i = 6; i < m + 6; i++) {
+                        string targetName = event[i];
+
+                        if (existingFighters.find(targetName) != existingFighters.end()
+                            || existingArchers.find(targetName) != existingArchers.end()
+                            || existingWizards.find(targetName) != existingWizards.end()) {
+
+                            if (existingFighters.find(targetName) != existingFighters.end()) {
+                                Fighter *fighterPtr = &existingFighters.find(targetName)->second;
+
+                                if (fighterPtr->WeaponUser::getHP() <= 0) {
+                                    flag = true;
+                                }
+                            }
+                            else if (existingArchers.find(targetName) != existingArchers.end()) {
+                                Archer *archerPtr = &existingArchers.find(targetName)->second;
+
+                                if (archerPtr->PotionUser::getHP() <= 0) {
+                                    flag = true;
+                                }
+                            }
+                            else if (existingWizards.find(targetName) != existingWizards.end()) {
+                                Wizard *wizardPtr = &existingWizards.find(targetName)->second;
+
+                                if (wizardPtr->SpellUser::getHP() <= 0) {
+                                    flag = true;
+                                }
+                            }
+                        }
+                        else {
+                            flag = true;
+                        }
+
+                        allowedTargets.push_back(targetName);
+                    }
+
+                    if (flag) {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+
+                    Spell *spell = new Spell(allowedTargets);
+
+                    auto archerIt = existingArchers.find(ownerName);
+                    auto wizardIt = existingWizards.find(ownerName);
+
+                    if (archerIt != existingArchers.end()) {
+                        Archer *archerPtr = &archerIt->second;
+
+                        int fullness = archerPtr->spellBook.elements.size();
+
+                        if (fullness == 2 || archerPtr->PotionUser::getHP() <= 0) {
+                            fout << "Error caught\n";
+                            continue;
+                        }
+                        else {
+                            archerPtr->spellBook.elements.emplace(spellName, *spell);
+                            fout << ownerName + " just obtained a new " + typeOfItem + " called " + itemName + ".\n";
+                        }
+                    }
+                    else if (wizardIt != existingWizards.end()) {
+                        Wizard *wizardPtr = &wizardIt->second;
+
+                        int fullness = wizardPtr->spellBook.elements.size();
+
+                        if (fullness == 10 || wizardPtr->SpellUser::getHP() <= 0) {
+                            fout << "Error caught\n";
+                            continue;
+                        }
+                        else {
+                            wizardPtr->spellBook.elements.emplace(spellName, *spell);
+                            fout << ownerName + " just obtained a new " + typeOfItem + " called " + itemName + ".\n";
+                        }
+                    }
+                    else {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+                }
+            }
+        }
+
+        if (event[0] == "Attack") {
+            string attackerName = event[1];
+            string targetName = event[2];
+            string weaponName = event[3];
+
+            auto attackerIt_1 = existingFighters.find(attackerName);
+            auto attackerIt_2 = existingArchers.find(attackerName);
+            auto attackerIt_3 = existingWizards.find(attackerName);
+
+            if (attackerIt_1 != existingFighters.end()) {
+                Fighter *attackerPtr = &attackerIt_1->second;
+
+                map<string, Weapon> weapons = attackerPtr->showWeapons();
+                auto weaponIt = weapons.find(weaponName);
+
+                Weapon *weaponPtr;
+                if (weaponIt != weapons.end()) {
+                    weaponPtr = &weaponIt->second;
+                }
+                else {
+                    fout << "Error caught\n";
+                    continue;
+                }
+
+                auto fighterIt = existingFighters.find(targetName);
+                auto archerIt = existingArchers.find(targetName);
+                auto wizardIt = existingWizards.find(targetName);
+
+                if (fighterIt != existingFighters.end()) {
+                    Fighter *targetPtr = &fighterIt->second;
+
+                    targetPtr->WeaponUser::takeDamage(weaponPtr->getDamage());
+                    fout << attackerName + " attacks " + targetName + " with their " + weaponName + "!\n";
+
+                    if (targetPtr->WeaponUser::getHP() <= 0) {
+                        targetPtr->arsenal.destroyArsenal();
+                        targetPtr->medicalBag.destroyMedicalBag();
+                        targetPtr->WeaponUser::die();
+
+                        fout << targetName + " has died...\n";
+                    }
+                }
+                else if (archerIt != existingArchers.end()) {
+                    Archer *targetPtr = &archerIt->second;
+
+                    targetPtr->PotionUser::takeDamage(weaponPtr->getDamage());
+                    fout << attackerName + " attacks " + targetName + " with their " + weaponName + "!\n";
+
+                    if (targetPtr->PotionUser::getHP() <= 0) {
+                        targetPtr->arsenal.destroyArsenal();
+                        targetPtr->medicalBag.destroyMedicalBag();
+                        targetPtr->spellBook.destroySpellBook();
+                        targetPtr->PotionUser::die();
+
+                        fout << targetName + " has died...\n";
+                    }
+                }
+                else if (wizardIt != existingWizards.end()) {
+                    Wizard *targetPtr = &wizardIt->second;
+
+                    targetPtr->SpellUser::takeDamage(weaponPtr->getDamage());
+                    fout << attackerName + " attacks " + targetName + " with their " + weaponName + "!\n";
+
+                    if (targetPtr->SpellUser::getHP() <= 0) {
+                        targetPtr->medicalBag.destroyMedicalBag();
+                        targetPtr->spellBook.destroySpellBook();
+                        targetPtr->SpellUser::die();
+
+                        fout << targetName + " has died...\n";
+                    }
+                }
+                else {
+                    fout << "Error caught\n";
+                    continue;
+                }
+            }
+            else if (attackerIt_2 != existingArchers.end()) {
+                Archer *attackerPtr = &attackerIt_2->second;
+
+                map<string, Weapon> weapons = attackerPtr->showWeapons();
+                auto weaponIt = weapons.find(weaponName);
+
+                Weapon *weaponPtr;
+                if (weaponIt != weapons.end()) {
+                    weaponPtr = &weaponIt->second;
+                }
+                else {
+                    fout << "Error caught\n";
+                    continue;
+                }
+
+                auto fighterIt = existingFighters.find(targetName);
+                auto archerIt = existingArchers.find(targetName);
+                auto wizardIt = existingWizards.find(targetName);
+
+                if (fighterIt != existingFighters.end()) {
+                    Fighter *targetPtr = &fighterIt->second;
+
+                    targetPtr->WeaponUser::takeDamage(weaponPtr->getDamage());
+                    fout << attackerName + " attacks " + targetName + " with their " + weaponName + "!\n";
+
+                    if (targetPtr->WeaponUser::getHP() <= 0) {
+                        targetPtr->arsenal.destroyArsenal();
+                        targetPtr->medicalBag.destroyMedicalBag();
+                        targetPtr->WeaponUser::die();
+
+                        fout << targetName + " has died...\n";
+                    }
+                }
+                else if (archerIt != existingArchers.end()) {
+                    Archer *targetPtr = &archerIt->second;
+
+                    targetPtr->PotionUser::takeDamage(weaponPtr->getDamage());
+                    fout << attackerName + " attacks " + targetName + " with their " + weaponName + "!\n";
+
+                    if (targetPtr->PotionUser::getHP() <= 0) {
+                        targetPtr->arsenal.destroyArsenal();
+                        targetPtr->medicalBag.destroyMedicalBag();
+                        targetPtr->spellBook.destroySpellBook();
+                        targetPtr->PotionUser::die();
+
+                        fout << targetName + " has died...\n";
+                    }
+                }
+                else if (wizardIt != existingWizards.end()) {
+                    Wizard *targetPtr = &wizardIt->second;
+
+                    targetPtr->SpellUser::takeDamage(weaponPtr->getDamage());
+                    fout << attackerName + " attacks " + targetName + " with their " + weaponName + "!\n";
+
+                    if (targetPtr->SpellUser::getHP() <= 0) {
+                        targetPtr->medicalBag.destroyMedicalBag();
+                        targetPtr->spellBook.destroySpellBook();
+                        targetPtr->SpellUser::die();
+
+                        fout << targetName + " has died...\n";
+                    }
+                }
+                else {
+                    fout << "Error caught\n";
+                    continue;
+                }
+            }
+            else {
+                fout << "Error caught\n";
+                continue;
+            }
+        }
+
+        if (event[0] == "Cast") {
+            string casterName = event[1];
+            string targetName = event[2];
+            string spellName = event[3];
+
+            auto casterIt_1 = existingArchers.find(casterName);
+            auto casterIt_2 = existingWizards.find(casterName);
+
+            if (casterIt_1 != existingArchers.end()) {
+                Archer *casterPtr = &casterIt_1->second;
+
+                map<string, Spell> spells = casterPtr->showSpells();
+                auto spellIt = spells.find(spellName);
+
+                Spell *spellPtr;
+                vector<string> allowedTargets = {};
+                if (spellIt != spells.end()) {
+                    spellPtr = &spellIt->second;
+                    allowedTargets = spellPtr->getAllowedTargets();
+                }
+                else {
+                    fout << "Error caught\n";
+                    continue;
+                }
+
+                auto fighterIt = existingFighters.find(targetName);
+                auto archerIt = existingArchers.find(targetName);
+                auto wizardIt = existingWizards.find(targetName);
+
+                if (fighterIt != existingFighters.end()) {
+                    if (std::find(allowedTargets.begin(), allowedTargets.end(), targetName) != allowedTargets.end()) {
+                        Fighter *targetPtr = &fighterIt->second;
+
+                        targetPtr->arsenal.destroyArsenal();
+                        targetPtr->medicalBag.destroyMedicalBag();
+                        targetPtr->WeaponUser::die();
+                        casterPtr->spellBook.elements.erase(spellName);
+
+                        fout << casterName + " casts " + spellName + " on " + targetName + "!\n";
+                        fout << targetName + " has died...\n";
+                    }
+                    else {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+                }
+                else if (archerIt != existingArchers.end()) {
+                    if (std::find(allowedTargets.begin(), allowedTargets.end(), targetName) != allowedTargets.end()) {
+                        Archer *targetPtr = &archerIt->second;
+
+                        targetPtr->arsenal.destroyArsenal();
+                        targetPtr->medicalBag.destroyMedicalBag();
+                        targetPtr->spellBook.destroySpellBook();
+                        targetPtr->PotionUser::die();
+                        casterPtr->spellBook.elements.erase(spellName);
+
+                        fout << casterName + " casts " + spellName + " on " + targetName + "!\n";
+                        fout << targetName + " has died...\n";
+                    }
+                    else {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+                }
+                else if (wizardIt != existingWizards.end()) {
+                    if (std::find(allowedTargets.begin(), allowedTargets.end(), targetName) != allowedTargets.end()) {
+                        Wizard *targetPtr = &wizardIt->second;
+
+                        targetPtr->medicalBag.destroyMedicalBag();
+                        targetPtr->spellBook.destroySpellBook();
+                        targetPtr->SpellUser::die();
+                        casterPtr->spellBook.elements.erase(spellName);
+
+                        fout << casterName + " casts " + spellName + " on " + targetName + "!\n";
+                        fout << targetName + " has died...\n";
+                    }
+                    else {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+                }
+                else {
+                    fout << "Error caught\n";
+                    continue;
+                }
+            }
+            else if (casterIt_2 != existingWizards.end()) {
+                Wizard *casterPtr = &casterIt_2->second;
+
+                map<string, Spell> spells = casterPtr->showSpells();
+                auto spellIt = spells.find(spellName);
+
+                Spell *spellPtr;
+                vector<string> allowedTargets = {};
+                if (spellIt != spells.end()) {
+                    spellPtr = &spellIt->second;
+                    allowedTargets = spellPtr->getAllowedTargets();
+                }
+                else {
+                    fout << "Error caught\n";
+                    continue;
+                }
+
+                auto fighterIt = existingFighters.find(targetName);
+                auto archerIt = existingArchers.find(targetName);
+                auto wizardIt = existingWizards.find(targetName);
+
+                if (fighterIt != existingFighters.end()) {
+                    if (std::find(allowedTargets.begin(), allowedTargets.end(), targetName) != allowedTargets.end()) {
+                        Fighter *targetPtr = &fighterIt->second;
+
+                        targetPtr->arsenal.destroyArsenal();
+                        targetPtr->medicalBag.destroyMedicalBag();
+                        targetPtr->WeaponUser::die();
+                        casterPtr->spellBook.elements.erase(spellName);
+
+                        fout << casterName + " casts " + spellName + " on " + targetName + "!\n";
+                        fout << targetName + " has died...\n";
+                    }
+                    else {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+                }
+                else if (archerIt != existingArchers.end()) {
+                    if (std::find(allowedTargets.begin(), allowedTargets.end(), targetName) != allowedTargets.end()) {
+                        Archer *targetPtr = &archerIt->second;
+
+                        targetPtr->arsenal.destroyArsenal();
+                        targetPtr->medicalBag.destroyMedicalBag();
+                        targetPtr->spellBook.destroySpellBook();
+                        targetPtr->PotionUser::die();
+                        casterPtr->spellBook.elements.erase(spellName);
+
+                        fout << casterName + " casts " + spellName + " on " + targetName + "!\n";
+                        fout << targetName + " has died...\n";
+                    }
+                    else {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+                }
+                else if (wizardIt != existingWizards.end()) {
+                    if (std::find(allowedTargets.begin(), allowedTargets.end(), targetName) != allowedTargets.end()) {
+                        Wizard *targetPtr = &wizardIt->second;
+
+                        targetPtr->medicalBag.destroyMedicalBag();
+                        targetPtr->spellBook.destroySpellBook();
+                        targetPtr->SpellUser::die();
+                        casterPtr->spellBook.elements.erase(spellName);
+
+                        fout << casterName + " casts " + spellName + " on " + targetName + "!\n";
+                        fout << targetName + " has died...\n";
+                    }
+                    else {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+                }
+                else {
+                    fout << "Error caught\n";
+                    continue;
+                }
+            }
+            else {
+                fout << "Error caught\n";
+                continue;
+            }
+        }
+
+        if (event[0] == "Drink") {
+            string supplierName = event[1];
+            string drinkerName = event[2];
+            string potionName = event[3];
+
+            auto supplierIt_1 = existingFighters.find(supplierName);
+            auto supplierIt_2 = existingArchers.find(supplierName);
+            auto supplierIt_3 = existingWizards.find(supplierName);
+
+            if (supplierIt_1 != existingFighters.end()) {
+                Fighter *supplierPtr = &supplierIt_1->second;
+
+                if (supplierPtr->WeaponUser::getHP() <= 0) {
+                    fout << "Error caught\n";
+                    continue;
+                }
+
+                map<string, Potion> potions = supplierPtr->showPotions();
+                auto potionIt = potions.find(potionName);
+
+                Potion *potion;
+                if (potionIt != potions.end()) {
+                    potion = &potionIt->second;
+                }
+                else {
+                    fout << "Error caught\n";
+                    continue;
+                }
+
+                auto fighterIt = existingFighters.find(drinkerName);
+                auto archerIt = existingArchers.find(drinkerName);
+                auto wizardIt = existingWizards.find(drinkerName);
+
+                if (fighterIt != existingFighters.end()) {
+                    Fighter *drinkerPtr = &fighterIt->second;
+
+                    if (drinkerPtr->WeaponUser::getHP() <= 0) {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+
+                    supplierPtr->medicalBag.elements.erase(potionName);
+                    drinkerPtr->WeaponUser::heal(potion->getHealValue());
+
+                    fout << drinkerName + " drinks " + potionName + " from " + supplierName + ".\n";
+                }
+                else if (archerIt != existingArchers.end()) {
+                    Archer *drinkerPtr = &archerIt->second;
+
+                    if (drinkerPtr->PotionUser::getHP() <= 0) {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+
+                    supplierPtr->medicalBag.elements.erase(potionName);
+                    drinkerPtr->PotionUser::heal(potion->getHealValue());
+
+                    fout << drinkerName + " drinks " + potionName + " from " + supplierName + ".\n";
+                }
+                else if (wizardIt != existingWizards.end()) {
+                    Wizard *drinkerPtr = &wizardIt->second;
+
+                    if (drinkerPtr->SpellUser::getHP() <= 0) {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+
+                    supplierPtr->medicalBag.elements.erase(potionName);
+                    drinkerPtr->SpellUser::heal(potion->getHealValue());
+
+                    fout << drinkerName + " drinks " + potionName + " from " + supplierName + ".\n";
+                }
+                else {
+                    fout << "Error caught\n";
+                    continue;
+                }
+            }
+            else if (supplierIt_2 != existingArchers.end()) {
+                Archer *supplierPtr = &supplierIt_2->second;
+
+                if (supplierPtr->PotionUser::getHP() <= 0) {
+                    fout << "Error caught\n";
+                    continue;
+                }
+
+                map<string, Potion> potions = supplierPtr->showPotions();
+                auto potionIt = potions.find(potionName);
+
+                Potion *potion;
+                if (potionIt != potions.end()) {
+                    potion = &potionIt->second;
+                }
+                else {
+                    fout << "Error caught\n";
+                    continue;
+                }
+
+                auto fighterIt = existingFighters.find(drinkerName);
+                auto archerIt = existingArchers.find(drinkerName);
+                auto wizardIt = existingWizards.find(drinkerName);
+
+                if (fighterIt != existingFighters.end()) {
+                    Fighter *drinkerPtr = &fighterIt->second;
+
+                    if (drinkerPtr->WeaponUser::getHP() <= 0) {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+
+                    supplierPtr->medicalBag.elements.erase(potionName);
+                    drinkerPtr->WeaponUser::heal(potion->getHealValue());
+
+                    fout << drinkerName + " drinks " + potionName + " from " + supplierName + ".\n";
+                }
+                else if (archerIt != existingArchers.end()) {
+                    Archer *drinkerPtr = &archerIt->second;
+
+                    if (drinkerPtr->PotionUser::getHP() <= 0) {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+
+                    supplierPtr->medicalBag.elements.erase(potionName);
+                    drinkerPtr->PotionUser::heal(potion->getHealValue());
+
+                    fout << drinkerName + " drinks " + potionName + " from " + supplierName + ".\n";
+                }
+                else if (wizardIt != existingWizards.end()) {
+                    Wizard *drinkerPtr = &wizardIt->second;
+
+                    if (drinkerPtr->SpellUser::getHP() <= 0) {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+
+                    supplierPtr->medicalBag.elements.erase(potionName);
+                    drinkerPtr->SpellUser::heal(potion->getHealValue());
+
+                    fout << drinkerName + " drinks " + potionName + " from " + supplierName + ".\n";
+                }
+                else {
+                    fout << "Error caught\n";
+                    continue;
+                }
+            }
+            else if (supplierIt_3 != existingWizards.end()) {
+                Wizard *supplierPtr = &supplierIt_3->second;
+
+                if (supplierPtr->SpellUser::getHP() <= 0) {
+                    fout << "Error caught\n";
+                    continue;
+                }
+
+                map<string, Potion> potions = supplierPtr->showPotions();
+                auto potionIt = potions.find(potionName);
+
+                Potion *potion;
+                if (potionIt != potions.end()) {
+                    potion = &potionIt->second;
+                }
+                else {
+                    fout << "Error caught\n";
+                    continue;
+                }
+
+                auto fighterIt = existingFighters.find(drinkerName);
+                auto archerIt = existingArchers.find(drinkerName);
+                auto wizardIt = existingWizards.find(drinkerName);
+
+                if (fighterIt != existingFighters.end()) {
+                    Fighter *drinkerPtr = &fighterIt->second;
+
+                    if (drinkerPtr->WeaponUser::getHP() <= 0) {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+
+                    supplierPtr->medicalBag.elements.erase(potionName);
+                    drinkerPtr->WeaponUser::heal(potion->getHealValue());
+
+                    fout << drinkerName + " drinks " + potionName + " from " + supplierName + ".\n";
+                }
+                else if (archerIt != existingArchers.end()) {
+                    Archer *drinkerPtr = &archerIt->second;
+
+                    if (drinkerPtr->PotionUser::getHP() <= 0) {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+
+                    supplierPtr->medicalBag.elements.erase(potionName);
+                    drinkerPtr->PotionUser::heal(potion->getHealValue());
+
+                    fout << drinkerName + " drinks " + potionName + " from " + supplierName + ".\n";
+                }
+                else if (wizardIt != existingWizards.end()) {
+                    Wizard *drinkerPtr = &wizardIt->second;
+
+                    if (drinkerPtr->SpellUser::getHP() <= 0) {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+
+                    supplierPtr->medicalBag.elements.erase(potionName);
+                    drinkerPtr->SpellUser::heal(potion->getHealValue());
+
+                    fout << drinkerName + " drinks " + potionName + " from " + supplierName + ".\n";
+                }
+                else {
+                    fout << "Error caught\n";
+                    continue;
+                }
+            }
+            else {
+                fout << "Error caught\n";
+                continue;
+            }
+        }
+
+        if (event[0] == "Show") {
+            if (event[1] == "characters") {
+                vector<string> allCharacters = {};
+
+                for (auto fighter: existingFighters) {
+                    if (fighter.second.WeaponUser::getHP() > 0) {
+                        allCharacters.push_back(fighter.first);
+                    }
+                }
+
+                for (auto archer: existingArchers) {
+                    if (archer.second.PotionUser::getHP() > 0) {
+                        allCharacters.push_back(archer.first);
+                    }
+                }
+
+                for (auto wizard: existingWizards) {
+                    if (wizard.second.SpellUser::getHP() > 0) {
+                        allCharacters.push_back(wizard.first);
+                    }
+                }
+
+                sort(allCharacters.begin(), allCharacters.end());
+                auto it = unique(allCharacters.begin(), allCharacters.end());
+                allCharacters.resize(distance(allCharacters.begin(), it));
+
+                for (string character: allCharacters) {
+                    auto fighterIt = existingFighters.find(character);
+                    auto archerIt = existingArchers.find(character);
+                    auto wizardIt = existingWizards.find(character);
+
+                    if (fighterIt != existingFighters.end()) {
+                        Fighter *fighterPtr = &fighterIt->second;
+                        fout << character << ":fighter:" << fighterPtr->WeaponUser::getHP() << " ";
+                    }
+                    if (archerIt != existingArchers.end()) {
+                        Archer *archerPtr = &archerIt->second;
+                        fout << character << ":archer:" << archerPtr->PotionUser::getHP() << " ";
+                    }
+                    if (wizardIt != existingWizards.end()) {
+                        Wizard *wizardPtr = &wizardIt->second;
+                        fout << character << ":wizard:" << wizardPtr->SpellUser::getHP() << " ";
+                    }
+                }
+                fout << "\n";
+            }
+
+            if (event[1] == "weapons") {
+                string ownerName = event[2];
+
+                auto fighterIt = existingFighters.find(ownerName);
+                auto archerIt = existingArchers.find(ownerName);
+
+                if (fighterIt != existingFighters.end()) {
+                    Fighter *fighterPtr = &fighterIt->second;
+
+                    if (fighterPtr->WeaponUser::getHP() > 0) {
+                        map<string, Weapon> weapons = fighterPtr->showWeapons();
+
+                        for (auto weapon: weapons) {
+                            fout << weapon.first << ":" << weapon.second.getDamage() << " ";
+                        }
+                        fout << "\n";
+                    }
+                    else {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+                }
+                else if (archerIt != existingArchers.end()) {
+                    Archer *archerPtr = &archerIt->second;
+
+                    if (archerPtr->PotionUser::getHP() > 0) {
+                        map<string, Weapon> weapons = archerPtr->showWeapons();
+
+                        for (auto weapon: weapons) {
+                            fout << weapon.first << ":" << weapon.second.getDamage() << " ";
+                        }
+                        fout << "\n";
+                    }
+                    else {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+                }
+                else {
+                    fout << "Error caught\n";
+                    continue;
+                }
+            }
+
+            if (event[1] == "potions") {
+                string ownerName = event[2];
+
+                auto fighterIt = existingFighters.find(ownerName);
+                auto archerIt = existingArchers.find(ownerName);
+                auto wizardIt = existingWizards.find(ownerName);
+
+                if (fighterIt != existingFighters.end()) {
+                    Fighter *fighterPtr = &fighterIt->second;
+
+                    if (fighterPtr->WeaponUser::getHP() > 0) {
+                        map<string, Potion> potions = fighterPtr->showPotions();
+
+                        for (auto potion: potions) {
+                            fout << potion.first << ":" << potion.second.getHealValue() << " ";
+                        }
+                        fout << "\n";
+                    }
+                    else {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+                }
+                else if (archerIt != existingArchers.end()) {
+                    Archer *archerPtr = &archerIt->second;
+
+                    if (archerPtr->PotionUser::getHP() > 0) {
+                        map<string, Potion> potions = archerPtr->showPotions();
+
+                        for (auto potion: potions) {
+                            fout << potion.first << ":" << potion.second.getHealValue() << " ";
+                        }
+                        fout << "\n";
+                    }
+                    else {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+                }
+                else if (wizardIt != existingWizards.end()) {
+                    Wizard *wizardPtr = &wizardIt->second;
+
+                    if (wizardPtr->SpellUser::getHP() > 0) {
+                        map<string, Potion> potions = wizardPtr->showPotions();
+
+                        for (auto potion: potions) {
+                            fout << potion.first << ":" << potion.second.getHealValue() << " ";
+                        }
+                        fout << "\n";
+                    }
+                    else {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+                }
+                else {
+                    fout << "Error caught\n";
+                    continue;
+                }
+            }
+
+            if (event[1] == "spells") {
+                string ownerName = event[2];
+
+                auto archerIt = existingArchers.find(ownerName);
+                auto wizardIt = existingWizards.find(ownerName);
+
+                if (archerIt != existingArchers.end()) {
+                    Archer *archerPtr = &archerIt->second;
+
+                    if (archerPtr->PotionUser::getHP() > 0) {
+                        map<string, Spell> spells = archerPtr->showSpells();
+
+                        for (auto spell: spells) {
+                            fout << spell.first << ":" << (spell.second.getAllowedTargets()).size() << " ";
+                        }
+                        fout << "\n";
+                    }
+                    else {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+                }
+                else if (wizardIt != existingWizards.end()) {
+                    Wizard *wizardPtr = &wizardIt->second;
+
+                    if (wizardPtr->SpellUser::getHP() > 0) {
+                        map<string, Spell> spells = wizardPtr->showSpells();
+
+                        for (auto spell: spells) {
+                            fout << spell.first << ":" << (spell.second.getAllowedTargets()).size() << " ";
+                        }
+                        fout << "\n";
+                    }
+                    else {
+                        fout << "Error caught\n";
+                        continue;
+                    }
+                }
+                else {
+                    fout << "Error caught\n";
+                    continue;
+                }
+            }
+        }
+    }
+
+    fin.close();
+    fout.close();
+
+    return 0;
+}
