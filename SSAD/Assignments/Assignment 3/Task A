@@ -1,0 +1,484 @@
+// C++ language
+
+#include <iostream>
+#include <iomanip>
+#include <vector>
+#include <map>
+#include <sstream>
+
+using namespace std;
+
+
+// This is the base class for different types of bank accounts.
+class AccountType
+{
+protected:
+    double fee;  // variable "fee" represents the fee associated with the account type.
+public:
+    // The constructor for the AccountType class takes a fee as a parameter and initializes the fee
+    AccountType(double fee)
+        : fee(fee)
+    {}
+
+    // virtual function "getFee()" returns the fee associated with the account type.
+    virtual double getFee()
+    { return fee; }
+};
+
+// The classes SavingsAccount, CheckingAccount, BusinessAccount and  is a derived class of the AccountType class.
+// They include overriding of function "getFee()", that returns a value "fee" based on which type of account user have
+class SavingsAccount: public AccountType
+{
+public:
+    SavingsAccount()
+        : AccountType(0.015)
+    {}
+};
+
+class CheckingAccount: public AccountType
+{
+public:
+    CheckingAccount()
+        : AccountType(0.02)
+    {}
+};
+
+class BusinessAccount: public AccountType
+{
+public:
+    BusinessAccount()
+        : AccountType(0.025)
+    {}
+};
+
+// The State class represents the state of an account:
+// boolean value "state" true for active accounts and false for inactive accounts.
+class State
+{
+public:
+    bool state = true;
+    void withdraw()
+    {}
+
+    void transfer()
+    {}
+};
+
+// The Account class represents a bank account and inherits from the SavingsAccount, CheckingAccount,
+// and BusinessAccount classes.
+class Account: public SavingsAccount, public CheckingAccount, public BusinessAccount
+{
+private:
+    string
+        typeName; // variable "typeName" stores the string representation of type of the account (e.g., "Savings", "Checking", "Business").
+    string ownerName; // "ownerName" variable stores the name of the account owner.
+    double balance; // variable "balance" stores the current balance of the account.
+    AccountType type = AccountType(0); // variable "type" stores the account type.
+    State state; // variable state represents the state of the account (active or inactive).
+    vector<string> transactions; // vector "transactions" stores the transaction history of the account.
+public:
+    Account()
+    {}
+    // In each function, a message is displayed upon completion, depending on the result of the function
+
+    // function "create()" creates a new account with the specified type, owner name, and initial balance.
+    void create(string typeString, string ownerString, double balanceInitial)
+    {
+        this->typeName = typeString;
+        this->ownerName = ownerString;
+        this->balance = balanceInitial;
+        this->state.state = true;
+        this->transactions.push_back("Initial Deposit $" + doubleToString(balanceInitial));
+
+        // Depending on the account type specified, the appropriate account type object is created and assigned to the "type" variable.
+        if (typeString == "Savings") {
+            this->type = *new SavingsAccount();
+        }
+        else if (typeString == "Checking") {
+            this->type = *new CheckingAccount();
+        }
+        else if (typeString == "Business") {
+            this->type = *new BusinessAccount();
+        }
+
+        cout << "A new " << this->getTypeName() << " account created for " << this->getOwnerName()
+             << " with an initial balance of $" << setprecision(3) << fixed << this->getBalance() << ".\n";
+    }
+
+    // function "deposit()" allows the account owner to deposit a specified amount into the account.
+    void deposit(double depositAmount)
+    {
+        this->balance += depositAmount;
+
+        transactions.push_back("Deposit $" + doubleToString(depositAmount));
+
+        cout << this->getOwnerName() << " successfully deposited $" << setprecision(3) << fixed << depositAmount
+             << ". New Balance: $"
+             << setprecision(3) << fixed << this->getBalance() << ".\n";
+    }
+
+    // function "withdraw()" allows the account owner to withdraw a specified amount from the account.
+    void withdraw(double withdrawalAmount)
+    {
+        this->balance -= withdrawalAmount;
+
+        double fee = this->getFee();
+        double transactionFee = fee * withdrawalAmount;
+        withdrawalAmount -= transactionFee;
+
+        transactions.push_back("Withdrawal $" + doubleToString(withdrawalAmount + transactionFee));
+
+        cout << this->getOwnerName() << " successfully withdrew $" << setprecision(3) << fixed << withdrawalAmount
+             << ". New Balance: $" << this->getBalance() << ". Transaction Fee: $" << transactionFee << " ("
+             << setprecision(1) << fixed << fee * 100 << "%) in the system.\n";
+    }
+
+    // function "transfer()" allows the account owner to transfer a specified amount from this account to another account.
+    void transfer(Account &toAccount, double transferAmount)
+    {
+        this->balance -= transferAmount;
+
+        double fee = this->getFee();
+        double transactionFee = fee * transferAmount;
+        transferAmount -= transactionFee;
+
+        toAccount.balance += transferAmount;
+
+        transactions.push_back("Transfer $" + doubleToString(transferAmount + transactionFee));
+
+        cout << this->getOwnerName() << " successfully transferred $" << setprecision(3) << fixed << transferAmount
+             << " to " << toAccount.getOwnerName() << ". New Balance: $" << this->getBalance() << ". Transaction Fee: $"
+             << transactionFee << " (" << setprecision(1) << fixed << fee * 100 << "%) in the system.\n";
+    }
+
+    // function "view()" displays the account details, including the owner name, account type, balance, state, and transaction history.
+    void view()
+    {
+        string stateText;
+        if (this->getState()) {
+            stateText = "Active";
+        }
+        else {
+            stateText = "Inactive";
+        }
+
+        cout << this->getOwnerName() << "'s Account: Type: " << typeName << ", Balance: $" << setprecision(3) << fixed
+             << this->getBalance() << ", State: " << stateText << ", Transactions: ["
+             << transactionsToString(transactions) << "]." << "\n";
+    }
+
+    // function "deactivate()" deactivates the account, changing state of account.
+    void deactivate()
+    {
+        this->state.state = false;
+
+        cout << this->getOwnerName() << "'s account is now deactivated.\n";
+    }
+
+    // function "activate()" activates the account, changing state of account.
+    void activate()
+    {
+        this->state.state = true;
+
+        cout << this->getOwnerName() << "'s account is now activated.\n";
+    }
+
+    // function "getFee()" returns the fee associated with the account type.
+    double getFee() override
+    { return this->type.getFee(); }
+
+    // function "getTypeName()" returns string representation of the account type name.
+    string getTypeName()
+    { return this->typeName; }
+
+    // function "getOwnerName()" return the account's owner name.
+    string getOwnerName()
+    { return this->ownerName; }
+
+    // function "getBalance()" returns the balance of the account.
+    double getBalance()
+    { return this->balance; }
+
+    // function "getState()" returns state of account (e.g. active or inactive), using state of State class.
+    bool getState()
+    { return this->state.state; }
+
+    // function "doubleToString()" converts a double value to a string format with 3 decimal places.
+    string doubleToString(double doubleBalance)
+    {
+        ostringstream strs;
+        strs << setprecision(3) << fixed << doubleBalance;
+        return strs.str();
+    }
+
+    // function "transactionsToString" converts a vector of transactions to a string format.
+    // Users need it when he wants to see history of their actions.
+    string transactionsToString(vector<string> vectorTransactions)
+    {
+        string stringTransactions = "";
+
+        for (int i = 0; i < vectorTransactions.size(); i++) {
+            if (i != 0) {
+                stringTransactions += ", " + vectorTransactions[i];
+            }
+            else {
+                stringTransactions += vectorTransactions[i];
+            }
+        }
+
+        return stringTransactions;
+    }
+};
+
+// Class BankingSystem is a singleton, because program suppose that users doesn't use any of other banking system.
+class BankingSystem
+{
+private:
+    static BankingSystem *instance;
+    BankingSystem()
+    {}
+public:
+    int n; // Value "n" represents number of requests in the banking system.
+    vector<vector<string>> events; // Vector "events" stores and use requests
+    map<string, Account> accounts; // Vector "accounts" stores all accounts in the banking system.
+
+    // Function "getInstance()" is responsible for only single instance of "BankingSystem" class.
+    static BankingSystem *getInstance()
+    {
+        if (instance == nullptr) {
+            instance = new BankingSystem();
+        }
+        return instance;
+    }
+
+    // Function "parse()" is responsible for read all information about user's requests from console.
+    void parse()
+    {
+        string line;
+
+        cin >> n;
+
+        for (int _ = 0; _ <= n; _++) {
+            getline(cin, line);
+            stringstream stream(line);
+            string word;
+            vector<string> event = {};
+
+            while (stream >> word) {
+                event.push_back(word);
+            }
+
+            events.push_back(event);
+        }
+    }
+
+    // Function "process()" processes the user's request and, based on the result of the work, launches the necessary functions.
+    void process()
+    {
+        for (int i = 1; i <= n; i++) {
+            vector<string> event = events[i];
+
+            // If the request is "Create Account", then banking system need to create a new account in the banking system.
+            if (event[0] == "Create" && event[1] == "Account") {
+                string typeString = event[2]; // event[2] is string representation of type of the user's account.
+                string ownerName = event[3]; // event[2] is a name of user.
+                double balanceInitial = stod(event[4]); // event[4] is a user's initial balance.
+
+                // Banking system do not support types of account, except "Savings", "Checking", and "Business".
+                if (typeString == "Savings" || typeString == "Checking" || typeString == "Business") {
+                    // Check for correctness of initial balance.
+                    if (1.000 <= balanceInitial && balanceInitial <= 450.000) {
+                        // Check for correctness of user's name.
+                        if (1 <= ownerName.size() && ownerName.size() <= 10) {
+                            // If user with given name already exists, banking system won't create new account with the same name.
+                            auto it = accounts.find(ownerName);
+
+                            if (it == accounts.end()) {
+                                Account *account = new Account();
+
+                                account->create(typeString, ownerName, balanceInitial);
+                                accounts.emplace(ownerName, *account);
+                            }
+                            else {
+                                cout << "Error: Account " << ownerName << " does already exist.\n";
+                            }
+                        }
+                    }
+                }
+            }
+
+                // If the request is "Deposit", then banking system need to read data about amount of money, that user wants to deposit.
+            else if (event[0] == "Deposit") {
+                string ownerName = event[1]; // event[1] is a user's name.
+                double depositAmount = stod(event[2]); // event[2] is an amount of money, that user wants to deposit.
+
+                // If user with given name exists, banking system runs the function "deposit()".
+                auto it = accounts.find(ownerName);
+                if (it != accounts.end()) {
+                    Account *account = &it->second;
+
+                    if (1 <= depositAmount && depositAmount <= 450) {
+                        account->deposit(depositAmount);
+                    }
+                    else {
+                        cout << "Error: Insufficient funds for " << ownerName << ".\n";
+                    }
+                }
+                else {
+                    cout << "Error: Account " << ownerName << " does not exist.\n";
+                }
+            }
+
+                // If the request is "Withdraw", banking system need to read data about amount of money, that user wants to withdraw.
+            else if (event[0] == "Withdraw") {
+                string ownerName = event[1]; // event[1] is a user's name.
+                double
+                    withdrawalAmount = stod(event[2]); // event[2] is an amount of money, that user wants to withdraw.
+
+                auto it = accounts.find(ownerName);
+
+                // If user with given name exists, banking system runs the function "withdraw() after all checks".
+                if (it != accounts.end()) {
+                    Account *account = &it->second;
+
+                    // If user's account in the active state, and user has so much money,
+                    // then banking system can withdraw money from user's balance.
+                    if (account->getState()) {
+                        if (1 <= withdrawalAmount && withdrawalAmount <= 5000) {
+                            if (account->getBalance() >= withdrawalAmount) {
+                                account->withdraw(withdrawalAmount);
+                            }
+                            else {
+                                cout << "Error: Insufficient funds for " << ownerName << ".\n";
+                            }
+                        }
+                    }
+                    else {
+                        cout << "Error: Account " << ownerName << " is inactive.\n";
+                    }
+                }
+                else {
+                    cout << "Error: Account " << ownerName << " does not exist.\n";
+                }
+            }
+
+                // If request is "Transfer" banking system need to read data about amount of other person and money, that user wants to transfer to another person.
+            else if (event[0] == "Transfer")    {
+                string fromAccountName = event[1]; // event[1] is a name of sender.
+                string toAccountName = event[2]; // event[2] is a name of recipient.
+                double transferAmount = stod(event[3]); // event[3] is an amount of money, that user wants to transfer.
+
+                auto it1 = accounts.find(fromAccountName);
+                auto it2 = accounts.find(toAccountName);
+
+                // If both of given accounts exists, then program continues.
+                if (it1 != accounts.end()) {
+                    if (it2 != accounts.end()) {
+                        Account *fromAccount = &it1->second;
+                        Account *toAccount = &it2->second;
+
+                        // If sender's account is in an active state, then program continues.
+                        if (fromAccount->getState()) {
+                            // If data about amount of money correct, then banking systems transfers money from sender to recipient.
+                            if (1 <= transferAmount && transferAmount <= 5000) {
+                                if (fromAccount->getBalance() >= transferAmount) {
+                                    fromAccount->transfer(*toAccount, transferAmount);
+                                }
+                                else {
+                                    cout << "Error: Insufficient funds for " << fromAccountName << ".\n";
+                                }
+                            }
+                        }
+                        else {
+                            cout << "Error: Account " << fromAccountName << " is inactive.\n";
+                        }
+                    }
+                    else {
+                        cout << "Error: Account " << toAccountName << " does not exist.\n";
+                    }
+                }
+                else {
+                    cout << "Error: Account " << fromAccountName << " does not exist.\n";
+                }
+            }
+
+                // If the request is "View", then banking system need to show history of all user's transactions.
+            else if (event[0] == "View") {
+                string ownerName = event[1]; // event[1] is user's name.
+
+                // If user with given name exists, program runs function "view()".
+                auto it = accounts.find(ownerName);
+
+                if (it != accounts.end()) {
+                    Account *account = &it->second;
+
+                    account->view();
+                }
+                else {
+                    cout << "Error: Account " << ownerName << " does not exist.\n";
+                }
+            }
+
+                // If the request is "Deactivate", banking system need to deactivate user's account.
+            else if (event[0] == "Deactivate") {
+                string ownerName = event[1];
+
+                // If user with given name exists, program continues.
+                auto it = accounts.find(ownerName);
+
+                if (it != accounts.end()) {
+                    Account *account = &it->second;
+
+                    // If user's account isn't already deactivated, then banking system deactivates it.
+                    if (account->getState()) {
+                        account->deactivate();
+                    }
+                    else {
+                        cout << "Error: Account " << ownerName << " is already deactivated.\n";
+                    }
+                }
+                else {
+                    cout << "Error: Account " << ownerName << " does not exist.\n";
+                }
+            }
+
+                // If the request is "Activate", banking system need to activate user's account.
+            else if (event[0] == "Activate") {
+                string ownerName = event[1];
+
+                // If user with given name exists, program continues.
+                auto it = accounts.find(ownerName);
+
+                if (it != accounts.end()) {
+                    Account *account = &it->second;
+
+                    // If user's account isn't already activated, then banking system activates it.
+                    if (!account->getState()) {
+                        account->activate();
+                    }
+                    else {
+                        cout << "Error: Account " << ownerName << " is already activated.\n";
+                    }
+                }
+                else {
+                    cout << "Error: Account " << ownerName << " does not exist.\n";
+                }
+            }
+        }
+    }
+};
+
+BankingSystem *BankingSystem::instance = nullptr;
+
+// In function "main()" user will see only one instance of "BankingSystem" class.
+// Function parses data from user, process it, using corresponding functions and will print a message after work.
+int main()
+{
+    BankingSystem *bankingSystem = BankingSystem::getInstance();
+
+    bankingSystem->parse();
+
+    bankingSystem->process();
+
+    return 0;
+}
