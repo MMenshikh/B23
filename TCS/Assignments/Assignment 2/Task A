@@ -1,0 +1,260 @@
+# Python Language
+# Нихуя не работает ебаный рот того питона 🖕🖕🖕🖕🖕🖕🖕 сука дебильность ебаная не успел еще нихуя блять в дедлайн пизда че теперь делать лол)
+
+def typeCheck(type, error):
+    flag = False
+    if type[:6] == "type=[" and type[-1] == "]":
+        flag = True
+        if (type[6:-1] != "deterministic" and type[6:-1] != "non-deterministic") and error is False:
+            flag = False
+    return flag
+
+
+def stateCheck(state):
+    flag = False
+    if state[:8] == "states=[" and state[-1] == "]":
+        flag = True
+        if state[8:-1] == "":
+            flag = False
+    return flag
+
+
+def languageCheck(language, error):
+    flag = False
+    if language[:10] == "alphabet=[" and language[-1] == "]":
+        flag = True
+        if language[10:-1] == "" and error is False:
+            flag = False
+    return flag
+
+
+def initialCheck(initial):
+    flag = False
+    if initial[:9] == "initial=[" and initial[-1] == "]":
+        flag = True
+    return flag
+
+
+def acceptingCheck(accepting):
+    flag = False
+    if accepting[:11] == "accepting=[" and accepting[-1] == "]":
+        flag = True
+    return flag
+
+
+def transitionCheck(transition):
+    flag = False
+    if transition[:13] == "transitions=[" and transition[-1] == "]":
+        flag = True
+    return flag
+
+
+def disjointCheck(graph, start_node):
+    visited = set()
+
+    def bfs(node):
+        queue = [node]
+        while queue:
+            current_node = queue.pop(0)
+            if current_node not in visited:
+                visited.add(current_node)
+                queue.extend(graph.get(current_node, []))
+
+    bfs(start_node)
+
+    return len(visited) == len(graph)
+
+
+data = [i.strip() for i in open("input.txt", "r").readlines()]
+N = len(data)
+
+error = False
+
+type = data[0]
+
+if typeCheck(type, error) is False:
+    print("E1: Input file is malformed")
+    error = True
+else:
+    type = type[6:-1]
+
+if error is False:
+    state = data[1]
+    if stateCheck(state):
+        state = sorted(list(set(state[8:-1].split(','))))
+    else:
+        print("E1: Input file is malformed")
+        error = True
+
+availableStates = {}
+
+for i in range(len(state)):
+    availableStates[state[i]] = i
+
+if error is False:
+    language = data[2]
+    if languageCheck(language, error):
+        language = sorted(list(set(language[10:-1].split(','))))
+    else:
+        print("E1: Input file is malformed")
+        error = True
+
+if error is False:
+    initial = data[3]
+    if initialCheck(initial):
+        if initial == "":
+            print("E2: Initial state is not defined")
+            error = True
+        else:
+            initial = sorted(list(set(initial.split(','))))
+
+            needed = ""
+            for i in initial:
+                flag = False
+                for j in state:
+                    if i == j:
+                        flag = True
+                if not flag:
+                    needed = i
+                    break
+
+            if flag is False:
+                print("E4: A state '", needed, "' is not in the set of states ", sep='')
+                error = True
+    else:
+        print("E1: Input file is malformed")
+        error = True
+
+if error is False:
+    accepting = data[4]
+    if acceptingCheck(accepting):
+        if accepting == "":
+            print("E3: Set of accepting states is empty")
+            error = True
+        else:
+            accepting = sorted(list(set(accepting.split(','))))
+
+            needed = ""
+            for i in accepting:
+                flag = False
+                for j in state:
+                    if i == j:
+                        flag = True
+                if not flag:
+                    needed = i
+                    break
+
+            if flag is False:
+                print("E4: A state '", needed, "' is not in the set of states ", sep='')
+                error = True
+    else:
+        print("E1: Input file is malformed")
+        error = True
+
+if error is False:
+    transition = data[5]
+    if transitionCheck(transition):
+        transition = transition[13:-1]
+
+        if transition == "":
+            print("E1: Input file is malformed")
+            error = True
+        else:
+            if len(set(transition.split(','))) != len(transition.split(',')):
+                print("E1: Input file is malformed")
+                error = True
+            else:
+                transition = sorted(list(set(transition.split(','))))
+
+                for trans in transition:
+                    if trans[0] and trans[1] and trans[2]:
+                        pass
+                    else:
+                        print("E1: Input file is malformed")
+                        error = True
+
+                if error is False:
+                    transition = [i.split('>') for i in transition]
+
+                    for i in range(len(transition)):
+                        transOne, transTwo, transThree = transition[i][0], transition[i][1], transition[i][2]
+
+                        if transOne not in state:
+                            if transOne != "":
+                                print("E4: A state'", transOne, "' is not in the set of states", sep='')
+                                error = True
+                            else:
+                                print("E1: Input file is malformed")
+                                error = True
+                        if transTwo not in state:
+                            if transTwo != "":
+                                print("E4: A state'", transTwo, "' is not in the set of states", sep='')
+                                error = True
+                            else:
+                                print("E1: Input file is malformed")
+                                error = True
+                        if transThree not in state:
+                            if transThree != "":
+                                print("E4: A state'", transThree, "' is not in the set of states", sep='')
+                                error = True
+                            else:
+                                print("E1: Input file is malformed")
+                                error = True
+    else:
+        print("E1: Input file is malformed")
+        error = True
+
+if error is False:
+    statesCheckerOne = {}
+    statesCheckerTwo = {}
+    for i in state:
+        statesCheckerOne[i] = []
+        statesCheckerTwo[i] = []
+    for i in transition:
+        statesCheckerOne[i[0]].append(i[2])
+        statesCheckerTwo[i[0]].append(i[1])
+    if disjointCheck(statesCheckerOne, initial[0]) is False:
+        print("E6: Some states are disjoint")
+        error = True
+    else:
+        if type == "deterministic":
+            for i in statesCheckerTwo.keys():
+                if len(statesCheckerTwo[i]) != len(set(statesCheckerTwo[i])):
+                    print("E7: FSA is non-deterministic")
+                    error = True
+
+if error is False:
+    d = dict()
+    n = len(state)
+    result = [[[None for _ in range(n)] for _ in range(n)] for _ in range(n + 1)]
+
+    for i in transition:
+        s = str(i[0]) + " " + str(i[2])
+        d[s] = i[1]
+
+    for i in range(len(state)):
+        for j in range(len(state)):
+            st = str(state[i]) + " " + str(state[j])
+            if st in d:
+                string = ''
+                string += str(d[st])
+                if i == j:
+                    string += '|eps'
+                result[0][i][j] = string
+            elif i == j:
+                result[0][i][j] = 'eps'
+            else:
+                result[0][i][j] = '{}'
+    for k in range(1, len(result)):
+        for i in range(len(result[k])):
+            for j in range(len(result[k][i])):
+                result[k][i][j] = "(" + result[k - 1][i][k - 1] + ")" + "(" + result[k - 1][k - 1][
+                    k - 1] + ")*" + "(" + result[k - 1][k - 1][j] + ")|(" + result[k - 1][i][j] + ")"
+
+    start = availableStates[initial[0]]
+    S = ''
+    for l in accepting:
+        finish = availableStates[l]
+        S += result[len(state)][start][finish] + '|'
+    S = S[:len(S) - 1:]
+    print('(' + S + ')')
