@@ -1,260 +1,246 @@
 # Python Language
 # Нихуя не работает ебаный рот того питона 🖕🖕🖕🖕🖕🖕🖕 сука дебильность ебаная не успел еще нихуя блять в дедлайн пизда че теперь делать лол)
-
-def typeCheck(type, error):
+# лан лейт сабмишн всего -20% :)))
+# то что ниже - работает
+def typeCheck(type):
     flag = False
-    if type[:6] == "type=[" and type[-1] == "]":
+    if type[:6] == "type=[" and type[-1] == ']':
         flag = True
-        if (type[6:-1] != "deterministic" and type[6:-1] != "non-deterministic") and error is False:
+        type = type[6:-1]
+        if type != "deterministic" and type != "non-deterministic":
             flag = False
     return flag
 
 
 def stateCheck(state):
     flag = False
-    if state[:8] == "states=[" and state[-1] == "]":
+    if state[:8] == "states=[" and state[-1] == ']' and state[-2] != ',':
         flag = True
-        if state[8:-1] == "":
+        state = state[8:-1]
+        if state == '':
             flag = False
     return flag
 
 
-def languageCheck(language, error):
+def alphabetCheck(alphabet):
     flag = False
-    if language[:10] == "alphabet=[" and language[-1] == "]":
+    if alphabet[:10] == "alphabet=[" and alphabet[-1] == ']' and alphabet[-2] != ',':
         flag = True
-        if language[10:-1] == "" and error is False:
+        alphabet = alphabet[10:-1]
+        if alphabet == '':
             flag = False
     return flag
 
 
-def initialCheck(initial):
-    flag = False
-    if initial[:9] == "initial=[" and initial[-1] == "]":
-        flag = True
-    return flag
+def initialCheck(initial, states):
+    if initial[:9] == "initial=[" and initial[-1] == ']' and initial[-2] != ',':
+        initial = initial[9:-1]
+        if initial != '':
+            initial = sorted(list(set(initial.split(','))))
+            for i in initial:
+                if i not in states:
+                    print(f"E4: A state '{i}' is not in the set of states")
+                    return False
+            return True
+        else:
+            print("E2: Initial state is not defined")
+            return False
+    else:
+        print("E1: Input file is malformed")
+        return False
 
 
-def acceptingCheck(accepting):
-    flag = False
-    if accepting[:11] == "accepting=[" and accepting[-1] == "]":
-        flag = True
-    return flag
+def acceptingCheck(accepting, states):
+    if accepting[:11] == "accepting=[" and accepting[-1] == ']' and accepting[-2] != ',':
+        accepting = accepting[11:-1]
+        if accepting != '':
+            accepting = sorted(list(set(accepting.split(','))))
+            for i in accepting:
+                if i not in states:
+                    print(f"E4: A state '{i}' is not in the set of states")
+                    return False
+            return True
+        else:
+            print("E3: Set of accepting states is empty")
+            return False
+    else:
+        print("E1: Input file is malformed")
+        return False
 
 
-def transitionCheck(transition):
-    flag = False
-    if transition[:13] == "transitions=[" and transition[-1] == "]":
-        flag = True
-    return flag
+def transitionCheck(transition, states, alphabet):
+    if transition[:13] == 'transitions=[' and transition[-1] == ']' and transition[-2] != ',':
+        transition = transition[13:-1]
+        if transition != '':
+            transition = transition.split(',')
+            if len(transition) == len(list(set(transition))):
+                for i in range(len(transition)):
+                    transition[i] = transition[i].split('>')
+                    if transition[i][1] not in alphabet:
+                        if transition[i][1]:
+                            print(f"E5: A transition '{transition[i][1]}' is not represented in the alphabet")
+                            return False
+                        else:
+                            print("E1: Input file is malformed")
+                            return False
+                    if transition[i][0] not in states:
+                        if transition[i][0]:
+                            print(f"E4: A state '{transition[i][0]}' is not in the set of states")
+                            return False
+                        else:
+                            print("E1: Input file is malformed")
+                            return False
+                    if transition[i][2] not in states:
+                        if transition[i][2]:
+                            print(f"E4: A state '{transition[i][2]}' is not in the set of states")
+                            return False
+                        else:
+                            print("E1: Input file is malformed")
+                            return False
+                return True
+            else:
+                print("E1: Input file is malformed")
+                return False
+        else:
+            print("E1: Input file is malformed")
+            return False
+
+    else:
+        print("E1: Input file is malformed")
+        return False
 
 
-def disjointCheck(graph, start_node):
-    visited = set()
-
-    def bfs(node):
-        queue = [node]
-        while queue:
-            current_node = queue.pop(0)
-            if current_node not in visited:
-                visited.add(current_node)
-                queue.extend(graph.get(current_node, []))
-
-    bfs(start_node)
-
-    return len(visited) == len(graph)
+def dfs(n, v, g):
+    if n in v:
+        return
+    else:
+        v.add(n)
+        for near in g.get(n, []):
+            dfs(near, v, g)
 
 
-data = [i.strip() for i in open("input.txt", "r").readlines()]
-N = len(data)
+def available(g, s):
+    v = set()
 
-error = False
+    dfs(s, v, g)
 
-type = data[0]
+    if len(v) == len(g):
+        return True
+    else:
+        return False
 
-if typeCheck(type, error) is False:
-    print("E1: Input file is malformed")
-    error = True
-else:
-    type = type[6:-1]
 
-if error is False:
+def disjointCheck(states, transition, initial):
+    d = {}
+    for i in states:
+        d[i] = []
+    for i in transition:
+        d[i[0]].append(i[2])
+    if available(d, initial[0]):
+        return True
+
+    return False
+
+
+def deterministicCheck(state, transition):
+    transitions = {}
+    for i in state:
+        transitions[i] = []
+    for i in transition:
+        transitions[i[0]].append(i[1])
+    for i in transitions.keys():
+        trans = transitions[i]
+        if len(trans) != len(list(set(trans))):
+            return False
+    return True
+
+
+def main(data):
+    type = data[0]
+    if typeCheck(type):
+        type = type[6:-1]
+    else:
+        print("E1: Input file is malformed")
+        return
     state = data[1]
     if stateCheck(state):
-        state = sorted(list(set(state[8:-1].split(','))))
+        state = state[8:-1]
+        states = sorted(list(set(state.split(','))))
     else:
         print("E1: Input file is malformed")
-        error = True
+        return
+    available_states = {}
+    for i in range(len(states)):
+        available_states[states[i]] = i
 
-availableStates = {}
-
-for i in range(len(state)):
-    availableStates[state[i]] = i
-
-if error is False:
-    language = data[2]
-    if languageCheck(language, error):
-        language = sorted(list(set(language[10:-1].split(','))))
+    alphabet = data[2]
+    if alphabetCheck(alphabet):
+        alphabet = sorted(list(set(alphabet[10:-1].split(','))))
     else:
         print("E1: Input file is malformed")
-        error = True
-
-if error is False:
+        return
     initial = data[3]
-    if initialCheck(initial):
-        if initial == "":
-            print("E2: Initial state is not defined")
-            error = True
-        else:
-            initial = sorted(list(set(initial.split(','))))
-
-            needed = ""
-            for i in initial:
-                flag = False
-                for j in state:
-                    if i == j:
-                        flag = True
-                if not flag:
-                    needed = i
-                    break
-
-            if flag is False:
-                print("E4: A state '", needed, "' is not in the set of states ", sep='')
-                error = True
+    if initialCheck(initial, states):
+        initial = sorted(list(set(initial[9:-1].split(','))))
     else:
-        print("E1: Input file is malformed")
-        error = True
-
-if error is False:
+        return
     accepting = data[4]
-    if acceptingCheck(accepting):
-        if accepting == "":
-            print("E3: Set of accepting states is empty")
-            error = True
-        else:
-            accepting = sorted(list(set(accepting.split(','))))
-
-            needed = ""
-            for i in accepting:
-                flag = False
-                for j in state:
-                    if i == j:
-                        flag = True
-                if not flag:
-                    needed = i
-                    break
-
-            if flag is False:
-                print("E4: A state '", needed, "' is not in the set of states ", sep='')
-                error = True
+    if acceptingCheck(accepting, states):
+        accepting = sorted(list(set(accepting[11:-1].split(','))))
     else:
-        print("E1: Input file is malformed")
-        error = True
-
-if error is False:
+        return
     transition = data[5]
-    if transitionCheck(transition):
-        transition = transition[13:-1]
 
-        if transition == "":
-            print("E1: Input file is malformed")
-            error = True
-        else:
-            if len(set(transition.split(','))) != len(transition.split(',')):
-                print("E1: Input file is malformed")
-                error = True
-            else:
-                transition = sorted(list(set(transition.split(','))))
-
-                for trans in transition:
-                    if trans[0] and trans[1] and trans[2]:
-                        pass
-                    else:
-                        print("E1: Input file is malformed")
-                        error = True
-
-                if error is False:
-                    transition = [i.split('>') for i in transition]
-
-                    for i in range(len(transition)):
-                        transOne, transTwo, transThree = transition[i][0], transition[i][1], transition[i][2]
-
-                        if transOne not in state:
-                            if transOne != "":
-                                print("E4: A state'", transOne, "' is not in the set of states", sep='')
-                                error = True
-                            else:
-                                print("E1: Input file is malformed")
-                                error = True
-                        if transTwo not in state:
-                            if transTwo != "":
-                                print("E4: A state'", transTwo, "' is not in the set of states", sep='')
-                                error = True
-                            else:
-                                print("E1: Input file is malformed")
-                                error = True
-                        if transThree not in state:
-                            if transThree != "":
-                                print("E4: A state'", transThree, "' is not in the set of states", sep='')
-                                error = True
-                            else:
-                                print("E1: Input file is malformed")
-                                error = True
+    if transitionCheck(transition, states, alphabet):
+        transition = sorted(list(set(transition[13:-1].split(','))))
+        for i in range(len(transition)):
+            transition[i] = transition[i].split('>')
     else:
-        print("E1: Input file is malformed")
-        error = True
+        return
 
-if error is False:
-    statesCheckerOne = {}
-    statesCheckerTwo = {}
-    for i in state:
-        statesCheckerOne[i] = []
-        statesCheckerTwo[i] = []
-    for i in transition:
-        statesCheckerOne[i[0]].append(i[2])
-        statesCheckerTwo[i[0]].append(i[1])
-    if disjointCheck(statesCheckerOne, initial[0]) is False:
+    if disjointCheck(states, transition, initial) is False:
         print("E6: Some states are disjoint")
-        error = True
-    else:
-        if type == "deterministic":
-            for i in statesCheckerTwo.keys():
-                if len(statesCheckerTwo[i]) != len(set(statesCheckerTwo[i])):
-                    print("E7: FSA is non-deterministic")
-                    error = True
+        return
 
-if error is False:
-    d = dict()
-    n = len(state)
-    result = [[[None for _ in range(n)] for _ in range(n)] for _ in range(n + 1)]
+    if type == "deterministic":
+        if deterministicCheck(states, transition) is False:
+            print("E7: FSA is non-deterministic")
+            return
 
+    transesFromTo = {}
+    output = [[["" for k in range(len(states))] for j in range(len(states))] for i in range(len(states) + 1)]
     for i in transition:
-        s = str(i[0]) + " " + str(i[2])
-        d[s] = i[1]
-
-    for i in range(len(state)):
-        for j in range(len(state)):
-            st = str(state[i]) + " " + str(state[j])
-            if st in d:
-                string = ''
-                string += str(d[st])
+        if i[0] + " " + i[2] not in transesFromTo:
+            transesFromTo[i[0] + " " + i[2]] = []
+        transesFromTo[i[0] + " " + i[2]].append(i[1])
+    for i in range(len(states)):
+        for j in range(len(states)):
+            s = states[i] + " " + states[j]
+            if s in transesFromTo:
+                line = ''
+                for k in sorted(transesFromTo[s]):
+                    line += k + '|'
+                line = line[:-1]
                 if i == j:
-                    string += '|eps'
-                result[0][i][j] = string
+                    line += "|eps"
+                output[0][i][j] = line
             elif i == j:
-                result[0][i][j] = 'eps'
+                output[0][i][j] = "eps"
             else:
-                result[0][i][j] = '{}'
-    for k in range(1, len(result)):
-        for i in range(len(result[k])):
-            for j in range(len(result[k][i])):
-                result[k][i][j] = "(" + result[k - 1][i][k - 1] + ")" + "(" + result[k - 1][k - 1][
-                    k - 1] + ")*" + "(" + result[k - 1][k - 1][j] + ")|(" + result[k - 1][i][j] + ")"
+                output[0][i][j] = "{}"
+    for i in range(1, len(output)):
+        for j in range(len(output[i])):
+            for k in range(len(output[i][j])):
+                output[i][j][k] = '(' + output[i - 1][j][i - 1] + ')' + '(' + output[i - 1][i - 1][i - 1] + ")*" + '(' + \
+                                  output[i - 1][i - 1][k] + ")|(" + output[i - 1][j][k] + ')'
+    stateFrom = available_states[initial[0]]
+    out = ""
+    for i in accepting:
+        stateTo = available_states[i]
+        out += output[len(states)][stateFrom][stateTo] + '|'
+    out = out[:-1]
+    print('(' + out + ')')
 
-    start = availableStates[initial[0]]
-    S = ''
-    for l in accepting:
-        finish = availableStates[l]
-        S += result[len(state)][start][finish] + '|'
-    S = S[:len(S) - 1:]
-    print('(' + S + ')')
+
+data = [i.strip() for i in open("input.txt", 'r').readlines()]
+main(data)
