@@ -1,0 +1,423 @@
+// C++ language
+
+// Design patterns: Factory, Proxy, Observer
+
+#include <iostream>
+#include <map>
+#include <vector>
+#include <sstream>
+#include <algorithm>
+
+using namespace std;
+
+// Class representing a Book
+class Book
+{
+private:
+    string title;
+    string author;
+    string price;
+public:
+    Book(string title, string author, string price)
+        : title(title), author(author), price(price)
+    {}
+
+    // Method to update the price of a book
+    void updatePrice(string new_price)
+    { this->price = new_price; }
+
+    // Getter method for book title
+    string getTitle()
+    { return this->title; }
+
+    // Getter method for book author
+    string getAuthor()
+    { return this->author; }
+
+    // Getter method for book price
+    string getPrice()
+    { return this->price; }
+};
+
+// Class representing a User
+class User
+{
+protected:
+    string user_type;
+    string username;
+    bool subscribed = false;
+public:
+    User(string user_type, string username)
+        : user_type(user_type), username(username)
+    {}
+
+    // Method to subscribe a user
+    void subscribe()
+    {
+        if (!this->isSubscribed()) {
+            this->subscribed = true;
+        }
+        else {
+            cout << "User already subscribed\n";
+        }
+    }
+
+    // Method to unsubscribe a user
+    void unsubscribe()
+    {
+        if (this->isSubscribed()) {
+            this->subscribed = false;
+        }
+        else {
+            cout << "User is not subscribed\n";
+        }
+    }
+
+    // Method to notify a subscribed user about price updates
+    void update(string title, string new_price)
+    {
+        cout << this->getUsername() << " notified about price update for " << title << " to " << new_price << "\n";
+    }
+
+    // Getter method for user type
+    string getUser_type()
+    { return this->user_type; }
+
+    // Getter method for username
+    string getUsername()
+    { return this->username; }
+
+    // Method to check if user is subscribed
+    bool isSubscribed()
+    { return this->subscribed; }
+};
+
+// Class representing a Standard User, inherits from User
+class StandardUser: public User
+{
+public:
+    StandardUser(string userType, string username)
+        : User(userType, username)
+    {}
+
+    // Method for a standard user to read a book
+    void readBook(Book *book)
+    {
+        string author = book->getAuthor();
+        string title = book->getTitle();
+
+        cout << this->getUsername() << " reading " << title << " by " << author << "\n";
+    }
+
+    // Method for a standard user to listen to a book (not implemented)
+    void listenBook()
+    {
+        cout << "No access\n";
+    }
+};
+
+// Class representing a Premium User, inherits from User
+class PremiumUser: public User
+{
+public:
+    PremiumUser(string userType, string username)
+        : User(userType, username)
+    {}
+
+    // Method for a premium user to read a book
+    void readBook(Book *book)
+    {
+        string author = book->getAuthor();
+        string title = book->getTitle();
+
+        cout << this->getUsername() << " reading " << title << " by " << author << "\n";
+    }
+
+    // Method for a premium user to listen to a book
+    void listenBook(Book *book)
+    {
+        string author = book->getAuthor();
+        string title = book->getTitle();
+
+        cout << username << " listening " << title << " by " << author << "\n";
+    }
+};
+
+// Factory class to create different types of users
+class Factory
+{
+public:
+    static User *createUser(string user_type, string username)
+    {
+        if (user_type == "standard") {
+            return new StandardUser(user_type, username);
+        }
+        else if (user_type == "premium") {
+            return new PremiumUser(user_type, username);
+        }
+    }
+};
+
+// Class representing an Online Bookstore
+// This class performs the function of an Observer Pattern
+class OnlineBookstore
+{
+private:
+    map<string, Book> books;
+    map<string, User> users;
+    vector<string> subscribedUsers;
+public:
+    OnlineBookstore()
+    {}
+
+    // Method to create a new book in the bookstore
+    void createBook(string title, string author, string price)
+    {
+        auto it = books.find(title);
+
+        if (it == books.end()) {
+            Book *book = new Book(title, author, price);
+
+            books.emplace(title, *book);
+        }
+        else {
+            cout << "Book already exists\n";
+        }
+    }
+
+    // Method to create a new user in the bookstore
+    void createUser(string user_type, string username)
+    {
+        auto it = users.find(username);
+
+        if (it == users.end()) {
+            User *user = Factory::createUser(user_type, username);
+
+            users.emplace(username, *user);
+        }
+        else {
+            cout << "User already exists\n";
+        }
+    }
+
+    // Method for a user to subscribe to the bookstore
+    void subscribe(string username)
+    {
+        auto it = users.find(username);
+
+        if (it != users.end()) {
+            User *user = &it->second;
+
+            if (!user->isSubscribed()) {
+                subscribedUsers.push_back(username);
+            }
+
+            user->subscribe();
+        }
+    }
+
+    // Method for a user to unsubscribe from the bookstore
+    void unsubscribe(string username)
+    {
+        auto itUser = users.find(username);
+
+        if (itUser != users.end()) {
+            User *user = &itUser->second;
+
+            if (user->isSubscribed()) {
+                auto itSubscriber = find(subscribedUsers.begin(), subscribedUsers.end(), username);
+
+                subscribedUsers.erase(itSubscriber);
+            }
+
+            user->unsubscribe();
+        }
+    }
+
+    // Method to update the price of a book and notify subscribed users
+    void updatePrice(string title, string new_price)
+    {
+        auto it = books.find(title);
+
+        if (it != books.end()) {
+            Book *book = &it->second;
+
+            book->updatePrice(new_price);
+
+            for (string subscriber: subscribedUsers) {
+                auto it = users.find(subscriber);
+                User *user = &it->second;
+
+                user->update(title, new_price);
+            }
+        }
+    }
+
+    // Method for a user to read a book
+    void readBook(string username, string title)
+    {
+        auto itUser = users.find(username);
+
+        if (itUser != users.end()) {
+            auto itBook = books.find(title);
+
+            if (itBook != books.end()) {
+                Book *book = &itBook->second;
+
+                string author = book->getAuthor();
+
+                cout << username << " reading " << title << " by " << author << "\n";
+            }
+        }
+    }
+
+    // Method for a premium user to listen to a book
+    void listenBook(string username, string title)
+    {
+        auto itUser = users.find(username);
+
+        if (itUser != users.end()) {
+            User *user = &itUser->second;
+
+            if (user->getUser_type() == "premium") {
+                auto itBook = books.find(title);
+
+                if (itBook != books.end()) {
+                    Book *book = &itBook->second;
+
+                    string author = book->getAuthor();
+
+                    cout << username << " listening " << title << " by " << author << "\n";
+                }
+            }
+        }
+    }
+
+    // Method to get a user object from username
+    User getUser(string username)
+    {
+        auto it = users.find(username);
+
+        User *user = &it->second;
+
+        return *user;
+    }
+};
+
+// Class representing a Proxy for Book operations
+class BookProxy
+{
+private:
+    OnlineBookstore *bookstore;
+public:
+    BookProxy(OnlineBookstore *bs)
+        : bookstore(bs)
+    {}
+
+    // Method for a premium user to listen to a book through the proxy
+    void listenBook(string username, string title)
+    {
+        User user = bookstore->getUser(username);
+        if (user.getUser_type() == "premium") {
+            bookstore->listenBook(username, title);
+        }
+        else {
+            cout << "No access\n";
+        }
+    }
+
+    // Method for a user to read a book through the proxy
+    void readBook(string username, string title)
+    {
+        User user = bookstore->getUser(username);
+        bookstore->readBook(username, title);
+    }
+};
+
+// Main function
+int main()
+{
+    // Vector to store events
+    vector<vector<string>> events;
+    // Create an instance of OnlineBookstore
+    OnlineBookstore *onlineBookstore = new OnlineBookstore();
+    // Create a proxy for book operations
+    BookProxy *bookProxy = new BookProxy(onlineBookstore);
+
+    // Parse events from input until "end" command is encountered
+    while (true) {
+        string line;
+
+        getline(cin, line);
+        stringstream stream(line);
+        string word;
+        vector<string> event = {};
+
+        while (stream >> word) {
+            event.push_back(word);
+        }
+        if (event[0] == "end") {
+            break;
+        }
+
+        events.push_back(event);
+    }
+
+    // Process each event
+    for (auto event: events) {
+        string command = event[0];
+
+        if (command == "createBook") {
+            string title = event[1];
+            string author = event[2];
+            string price = event[3];
+
+            onlineBookstore->createBook(title, author, price);
+        }
+
+        if (command == "createUser") {
+            string user_type = event[1];
+            string username = event[2];
+
+            onlineBookstore->createUser(user_type, username);
+        }
+
+        if (command == "subscribe") {
+            string username = event[1];
+
+            onlineBookstore->subscribe(username);
+        }
+
+        if (command == "unsubscribe") {
+            string username = event[1];
+
+            onlineBookstore->unsubscribe(username);
+        }
+
+        if (command == "updatePrice") {
+            string title = event[1];
+            string new_price = event[2];
+
+            onlineBookstore->updatePrice(title, new_price);
+        }
+
+        if (command == "readBook") {
+            string username = event[1];
+            string title = event[2];
+
+            bookProxy->readBook(username, title);
+        }
+
+        if (command == "listenBook") {
+            string username = event[1];
+            string title = event[2];
+            bookProxy->listenBook(username, title);
+        }
+
+        if (command == "end") {
+            return 0;
+        }
+    }
+
+    return 0;
+}
